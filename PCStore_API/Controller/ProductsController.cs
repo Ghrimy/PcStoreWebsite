@@ -55,23 +55,32 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
     }
 
-    [HttpGet("{category}")]
-    public async Task<ActionResult<List<ProductDto>>> GetProductsByCategory(ProductCategory category)
+    [HttpGet("filter")]
+    public async Task<ActionResult<List<ProductDto>>> FilterProduct(ProductCategory? category, string? brand)
     {
-        var product = await context.Products
-            .Where(p => p.ProductCategory == category)
-            .Select(p => new ProductDto()
-            {
-                ProductId = p.ProductId,
-                ProductName = p.ProductName,
-                ProductDescription = p.ProductDescription,
-                ProductImage = p.ProductImage,
-                ProductPrice = p.ProductPrice,
-                ProductStock = p.ProductStock,
-                ProductBrand = p.ProductBrand,
-            }).ToListAsync();
+        var query = context.Products.AsQueryable();
         
-        return Ok(product);
+        if(category.HasValue)
+            query = query.Where(p => p.ProductCategory == category);
+        
+        if(!string.IsNullOrEmpty(brand))
+            query = query.Where(p => p.ProductBrand == brand.ToUpper());
+
+        var products = await query.Select(p => new ProductDto()
+        {
+            ProductId = p.ProductId,
+            ProductName = p.ProductName,
+            ProductDescription = p.ProductDescription,
+            ProductImage = p.ProductImage,
+            ProductPrice = p.ProductPrice,
+            ProductStock = p.ProductStock,
+            ProductBrand = p.ProductBrand,
+        }).ToListAsync();
+        
+        if(products.Count == 0) return NotFound("No products found with the given filters");
+        
+        return Ok(products);
+
     }
 
     
