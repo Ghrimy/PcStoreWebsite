@@ -16,9 +16,16 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
-        var products = await context.Products.ToListAsync();
-        
-        if (products == null) return NotFound();
+        var products = await context.Products.Select(p => new ProductDto
+        {
+            ProductId = p.ProductId,
+            ProductName = p.ProductName,
+            ProductDescription = p.ProductDescription,
+            ProductImage = p.ProductImage,
+            ProductPrice = p.ProductPrice,
+            ProductStock = p.ProductStock,
+            ProductBrand = p.ProductBrand,
+        }).ToListAsync();
         
         return Ok(products);
 
@@ -46,6 +53,25 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
         return Ok(product);
 
+    }
+
+    [HttpGet("{category}")]
+    public async Task<ActionResult<List<ProductDto>>> GetProductsByCategory(ProductCategory category)
+    {
+        var product = await context.Products
+            .Where(p => p.ProductCategory == category)
+            .Select(p => new ProductDto()
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                ProductDescription = p.ProductDescription,
+                ProductImage = p.ProductImage,
+                ProductPrice = p.ProductPrice,
+                ProductStock = p.ProductStock,
+                ProductBrand = p.ProductBrand,
+            }).ToListAsync();
+        
+        return Ok(product);
     }
 
     
