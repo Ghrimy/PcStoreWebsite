@@ -56,7 +56,16 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     }
 
     [HttpGet("filter")]
-    public async Task<ActionResult<List<ProductDto>>> FilterProduct(ProductCategory? category, string? brand)
+    public async Task<ActionResult<List<ProductDto>>> FilterProduct(
+        ProductCategory? category,
+        string? brand,
+        decimal? minPrice,
+        decimal? maxPrice,
+        bool inStockOnly = false,
+        string? sortBy = null,
+        string sortOrder = "asc",
+        int pageNumber = 1,
+        int pageSize = 10)
     {
         var query = context.Products.AsQueryable();
         
@@ -64,7 +73,35 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
             query = query.Where(p => p.ProductCategory == category);
         
         if(!string.IsNullOrEmpty(brand))
-            query = query.Where(p => p.ProductBrand == brand.ToUpper());
+            query = query.Where(p => p.ProductBrand.ToUpper() == brand.ToUpper());
+
+        
+        switch (sortBy?.ToLower())
+        {
+            case "price":
+                query = sortOrder == "desc"
+                    ? query.OrderByDescending(p => p.ProductPrice)
+                    : query.OrderBy(p => p.ProductPrice);
+                break;
+            case "name":
+                query = sortOrder == "desc"
+                    ? query.OrderByDescending(p => p.ProductName)
+                    : query.OrderBy(p => p.ProductName);
+                break;
+        }
+        
+        if (minPrice.HasValue)
+            query = query.Where(p => p.ProductPrice >= minPrice.Value);
+
+        if (maxPrice.HasValue)
+            query = query.Where(p => p.ProductPrice <= maxPrice.Value);
+
+        if (pageNumber >= 0)
+            query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+        
+        if (inStockOnly)
+            query = query.Where(p => p.ProductStock > 0);
+
 
         var products = await query.Select(p => new ProductDto()
         {
