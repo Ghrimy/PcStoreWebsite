@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
 using PCStore_API.Models;
@@ -12,7 +13,12 @@ namespace PCStore_API.Controller;
 
 public class ProductsController(PcStoreDbContext context) : ControllerBase
 {
-    // Gets all products
+    /// <summary>
+    /// Front end Dto
+    /// Gets all products and search functions
+    /// Uses productDto that only has the basic information for customer
+    /// </summary>
+    
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
@@ -23,7 +29,6 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
             ProductDescription = p.ProductDescription,
             ProductImage = p.ProductImage,
             ProductPrice = p.ProductPrice,
-            ProductStock = p.ProductStock,
             ProductBrand = p.ProductBrand,
         }).ToListAsync();
         
@@ -31,7 +36,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
     }
 
-    // Gets product by id
+    
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ProductDto>> FindProduct(int id)
     {
@@ -44,7 +49,6 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
                 ProductDescription = p.ProductDescription,
                 ProductImage = p.ProductImage,
                 ProductPrice = p.ProductPrice,
-                ProductStock = p.ProductStock,
                 ProductBrand = p.ProductBrand,
 
             }).FirstOrDefaultAsync();
@@ -55,6 +59,19 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="category"></param>
+    /// <param name="brand"></param>
+    /// <param name="minPrice"></param>
+    /// <param name="maxPrice"></param>
+    /// <param name="inStockOnly"></param>
+    /// <param name="sortBy"></param>
+    /// <param name="sortOrder"></param>
+    /// <param name="pageNumber"></param>
+    /// <param name="pageSize"></param>
+    /// <returns></returns>
     [HttpGet("filter")]
     public async Task<ActionResult<List<ProductDto>>> FilterProduct(
         ProductCategory? category,
@@ -110,7 +127,6 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
             ProductDescription = p.ProductDescription,
             ProductImage = p.ProductImage,
             ProductPrice = p.ProductPrice,
-            ProductStock = p.ProductStock,
             ProductBrand = p.ProductBrand,
         }).ToListAsync();
         
@@ -120,12 +136,63 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
     }
 
-    
-    [HttpPost]
-    public void Post([FromBody] Product product)
+    /// <summary>
+    /// Api endpoints for authorized users
+    /// updates, creates and deletes products
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="dto"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Employee,Admin")]
+    [HttpPatch("/products/{id:int}")]
+    public async Task<ActionResult<ProductUpdateDto>>  UpdateProduct([FromRoute] int id, [FromBody] ProductUpdateDto dto)
     {
-        context.Products.Add(product);
-        context.SaveChanges();
+        var product = await context.Products.FindAsync(id);
+        if (product == null) return NotFound("Product not found");
+        
+        product.ProductName = dto.ProductName;
+        product.ProductDescription = dto.ProductDescription;
+        product.ProductImage = dto.ProductImage;
+        product.ProductPrice = dto.ProductPrice;    
+        product.ProductBrand = dto.ProductBrand;
+        product.ProductCategory = dto.ProductCategory;
+        product.ProductStock = dto.ProductStock;
+
+        await context.SaveChangesAsync();
+        return NoContent();
     }
     
+    [Authorize(Roles = "Employee,Admin")]
+    [HttpPost("/products")]
+    public async Task<ActionResult<ProductUpdateDto>> CreateProduct([FromBody] ProductUpdateDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var createProduct = new Product()
+        {
+            ProductName = dto.ProductName,
+            ProductDescription = dto.ProductDescription,
+            ProductImage = dto.ProductImage,
+            ProductPrice = dto.ProductPrice,
+            ProductBrand = dto.ProductBrand,
+            ProductCategory = dto.ProductCategory,
+            ProductStock = dto.ProductStock,
+        };
+        
+        context.Products.Add(createProduct);
+        await context.SaveChangesAsync();
+        return CreatedAtAction(nameof(FindProduct), new { id = createProduct.ProductId }, createProduct);
+
+    }
+
+    [Authorize(Roles = "Employee,Admin")]
+    [HttpDelete("/products/{id:int}")]
+    public async Task<IActionResult> DeleteProduct([FromRoute] int id)
+    {
+        var product = await context.Products.FindAsync(id);
+        if (product == null) return NotFound();
+        
+        context.Products.Remove(product);
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
 }
