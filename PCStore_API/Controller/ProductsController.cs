@@ -150,21 +150,22 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
         var product = await context.Products.FindAsync(id);
         if (product == null) return NotFound("Product not found");
         
-        product.ProductName = dto.ProductName;
-        product.ProductDescription = dto.ProductDescription;
-        product.ProductImage = dto.ProductImage;
-        product.ProductPrice = dto.ProductPrice;    
-        product.ProductBrand = dto.ProductBrand;
-        product.ProductCategory = dto.ProductCategory;
-        product.ProductStock = dto.ProductStock;
+        if (dto.ProductName != null) product.ProductName = dto.ProductName;
+        if (dto.ProductDescription != null) product.ProductDescription = dto.ProductDescription;
+        if (dto.ProductImage != null) product.ProductImage = dto.ProductImage;
+        if (dto.ProductBrand != null) product.ProductBrand = dto.ProductBrand;
+        if (dto.ProductCategory.HasValue) product.ProductCategory = dto.ProductCategory.Value;
+        if (dto.ProductStock.HasValue) product.ProductStock = dto.ProductStock.Value;
+        if (dto.ProductPrice.HasValue) product.ProductPrice = dto.ProductPrice.Value;
+
 
         await context.SaveChangesAsync();
-        return NoContent();
+        return Ok(product);
     }
     
     [Authorize(Roles = "Employee,Admin")]
     [HttpPost("/products")]
-    public async Task<ActionResult<ProductUpdateDto>> CreateProduct([FromBody] ProductUpdateDto dto)
+    public async Task<ActionResult<ProductCreateDto>> CreateProduct([FromBody] ProductCreateDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var createProduct = new Product()
