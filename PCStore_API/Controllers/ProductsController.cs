@@ -5,7 +5,7 @@ using PCStore_API.Data;
 using PCStore_API.Models;
 using PCStore_Shared;
 
-namespace PCStore_API.Controller;
+namespace PCStore_API.Controllers;
 
 
 [ApiController]

@@ -11,8 +11,8 @@ using PCStore_API.Data;
 namespace PCStore_API.Migrations
 {
     [DbContext(typeof(PcStoreDbContext))]
-    [Migration("20250908075931_SeedProducts")]
-    partial class SeedProducts
+    [Migration("20250914174332_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -57,40 +57,6 @@ namespace PCStore_API.Migrations
                     b.HasKey("ProductId");
 
                     b.ToTable("Products");
-
-                    b.HasData(
-                        new
-                        {
-                            ProductId = 1,
-                            ProductCategory = 5,
-                            ProductName = "RTX 4080",
-                            ProductPrice = 1299.99m,
-                            ProductStock = 5
-                        },
-                        new
-                        {
-                            ProductId = 2,
-                            ProductCategory = 6,
-                            ProductName = "Intel i9 CPU",
-                            ProductPrice = 599.99m,
-                            ProductStock = 10
-                        },
-                        new
-                        {
-                            ProductId = 3,
-                            ProductCategory = 6,
-                            ProductName = "AMD Ryzen 9 5900X",
-                            ProductPrice = 1499.99m,
-                            ProductStock = 10
-                        },
-                        new
-                        {
-                            ProductId = 5,
-                            ProductCategory = 2,
-                            ProductName = "Asrock AM4 B450M",
-                            ProductPrice = 1299.99m,
-                            ProductStock = 5
-                        });
                 });
 
             modelBuilder.Entity("PCStore_Shared.ShoppingCartItem", b =>
