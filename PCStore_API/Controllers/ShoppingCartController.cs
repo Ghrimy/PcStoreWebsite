@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
 using PCStore_API.Models;
@@ -8,6 +10,7 @@ namespace PCStore_API.Controllers;
 
 
 [ApiController]
+[Authorize(Roles = "User")]
 [Route("api/[controller]")]
 public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
 {
@@ -24,24 +27,39 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
             }).ToList(),
             TotalPrice = cart.Items.Sum(i => i.Quantity * i.Product.ProductPrice)
         };
+
     
-    [HttpGet("{userId}")]
-    public async Task<ActionResult<ShoppingCartDto>> GetCart(int userId)
+
+    [HttpGet]
+    public async Task<ActionResult<ShoppingCartDto>> GetCart()
     {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized("User ID claim is missing or invalid.");
+        }
         var cart = await context.ShoppingCart
-            .Include(shoppingCart => shoppingCart.Items).ThenInclude(shoppingCartItem => shoppingCartItem.Product)
+            .Include(shoppingCart => shoppingCart.Items)
+            .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
             .FirstOrDefaultAsync(c => c.UserId == userId);
         if(cart == null) return NotFound();
 
         var cartDto = MapCartToDto(cart);
         return Ok(cartDto);
     }
+    
 
-    [HttpPost("{userId}/items")]
-    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart(int userId, [FromBody] ShoppingCartItemDto item)
+    [HttpPost("items")]
+    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody] ShoppingCartItemDto item)
     {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized("User ID claim is missing or invalid.");
+        }
         var cart = await context.ShoppingCart
-            .Include(shoppingCart => shoppingCart.Items).ThenInclude(shoppingCartItem => shoppingCartItem.Product)
+            .Include(shoppingCart => shoppingCart.Items)
+            .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
             .FirstOrDefaultAsync(c => c.UserId == userId);
         if(cart == null) return NotFound();
 
@@ -60,18 +78,31 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
             });
         }
 
+        if (item.Quantity < 0)
+        {
+            return BadRequest("Quantity cannot be negative.");
+        }
+
         await context.SaveChangesAsync();
         var cartDto = MapCartToDto(cart);
         return Ok(cartDto);
     }
 
 
-    [HttpDelete("{userId}/items/{productId}/{amount}")]
-    public async Task<ActionResult> RemoveItemFromCart(int userId, int productId, int amount)
+    [HttpDelete("items/{productId:int}/{amount:int}")]
+    public async Task<ActionResult> RemoveItemFromCart(int productId, int amount)
     {
-        var cart = await context.ShoppingCart.Include(shoppingCart => shoppingCart.Items).FirstOrDefaultAsync(c => c.UserId == userId);
-        if(cart == null) return NotFound();
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized("User ID claim is missing or invalid.");
+        }
+        var cart = await context.ShoppingCart
+            .Include(shoppingCart => shoppingCart.Items)
+            .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
         
+        if(cart == null) return NotFound();
         var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
         if(existingItem == null) return NotFound();
 
@@ -83,20 +114,37 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
                 cart.Items.Remove(existingItem);
             }
         }
+
+        if (existingItem.Quantity < 0)
+        {
+            return BadRequest("Quantity cannot be negative.");
+        }
         
+        var cartDto = MapCartToDto(cart);
         await context.SaveChangesAsync();
-        return NoContent();
+        return Ok(cartDto);
         
     }
     
-    [HttpDelete("{userId}")]
-    public async Task<ActionResult<ShoppingCartDto>> ClearCart(int userId)
+
+    [HttpDelete]
+    public async Task<ActionResult<ShoppingCartDto>> ClearCart()
     {
-        var cart = await context.ShoppingCart.Include(shoppingCart => shoppingCart.Items).FirstOrDefaultAsync(c => c.UserId == userId);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized("User ID claim is missing or invalid.");
+        }
+        var cart = await context.ShoppingCart
+            .Include(shoppingCart => shoppingCart.Items)
+            .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+        
         if(cart == null) return NotFound();
         
         context.ShoppingCartItem.RemoveRange(cart.Items);
+        var cartDto = MapCartToDto(cart);
         await context.SaveChangesAsync();
-        return NoContent();
+        return Ok(cartDto);
     }
 }

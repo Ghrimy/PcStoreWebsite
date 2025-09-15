@@ -18,7 +18,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     /// Gets all products and search functions
     /// Uses productDto that only has the basic information for customer
     /// </summary>
-    
+    [Authorize(Roles = "User")]
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
@@ -36,7 +36,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
 
     }
 
-    
+    [Authorize(Roles = "User")]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ProductDto>> FindProduct(int id)
     {
@@ -72,6 +72,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     /// <param name="pageNumber"></param>
     /// <param name="pageSize"></param>
     /// <returns></returns>
+    [Authorize(Roles = "User")]
     [HttpGet("filter")]
     public async Task<ActionResult<List<ProductDto>>> FilterProduct(
         ProductCategory? category,
