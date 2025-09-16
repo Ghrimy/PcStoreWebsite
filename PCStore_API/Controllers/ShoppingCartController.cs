@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PCStore_API.Data;
 using PCStore_API.Models;
 using PCStore_Shared;
@@ -28,20 +29,25 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
             TotalPrice = cart.Items.Sum(i => i.Quantity * i.Product.ProductPrice)
         };
 
+    private int? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId)) return null;
+        
+        return userId;
+    }
+
     
 
     [HttpGet]
     public async Task<ActionResult<ShoppingCartDto>> GetCart()
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized("User ID claim is missing or invalid.");
-        }
+        var userIdClaim = GetCurrentUserId();
+        
         var cart = await context.ShoppingCart
             .Include(shoppingCart => shoppingCart.Items)
             .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userIdClaim);
         if(cart == null) return NotFound();
 
         var cartDto = MapCartToDto(cart);
@@ -52,24 +58,35 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
     [HttpPost("items")]
     public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody] ShoppingCartItemDto item)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized("User ID claim is missing or invalid.");
-        }
+        var userIdClaim = GetCurrentUserId();
+        
         var cart = await context.ShoppingCart
             .Include(shoppingCart => shoppingCart.Items)
             .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userIdClaim);
         if(cart == null) return NotFound();
+        if(cart.Items.IsNullOrEmpty())
+        {
+            cart.Items = new List<ShoppingCartItem>();
+        }
 
         var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == item.ProductId);
         if(existingItem != null)
         {
-            existingItem.Quantity += item.Quantity;
+            if (existingItem.Quantity + item.Quantity <= context.Products.Find(item.ProductId).ProductStock)
+            {
+                existingItem.Quantity += item.Quantity;
+            }
+            else
+            {
+                return BadRequest("Quantity exceeds stock.");
+            }
         }
         else
         {
+            if (item.Quantity < 0) return BadRequest("Quantity cannot be less than zero.");
+            var product = await context.Products.FindAsync(item.ProductId);
+            if (product == null) return NotFound();
             cart.Items.Add(new ShoppingCartItem
             {
                 ProductId = item.ProductId,
@@ -77,14 +94,10 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
                 ShoppingCartId = cart.ShoppingCartId,
             });
         }
-
-        if (item.Quantity < 0)
-        {
-            return BadRequest("Quantity cannot be negative.");
-        }
-
-        await context.SaveChangesAsync();
+        
         var cartDto = MapCartToDto(cart);
+        cartDto.TotalPrice = cartDto.ShoppingCartItems.Sum(i => i.Quantity * i.ProductPrice);
+        await context.SaveChangesAsync();
         return Ok(cartDto);
     }
 
@@ -92,15 +105,12 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
     [HttpDelete("items/{productId:int}/{amount:int}")]
     public async Task<ActionResult> RemoveItemFromCart(int productId, int amount)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized("User ID claim is missing or invalid.");
-        }
+        var userIdClaim = GetCurrentUserId();
+        
         var cart = await context.ShoppingCart
             .Include(shoppingCart => shoppingCart.Items)
             .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userIdClaim);
         
         if(cart == null) return NotFound();
         var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
@@ -108,19 +118,23 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
 
         if (existingItem != null)
         {
-            existingItem.Quantity -= amount;
-            if (existingItem.Quantity <= 0)
+            if (existingItem.Quantity - amount < 0)
+            {
+                return BadRequest("Can't have less than zero items in the cart.");
+            }
+            else if (existingItem.Quantity - amount == 0)
             {
                 cart.Items.Remove(existingItem);
             }
+            else
+            {
+                existingItem.Quantity -= amount;
+            }
         }
 
-        if (existingItem.Quantity < 0)
-        {
-            return BadRequest("Quantity cannot be negative.");
-        }
-        
+
         var cartDto = MapCartToDto(cart);
+        cartDto.TotalPrice = cartDto.ShoppingCartItems.Sum(i => i.Quantity * i.ProductPrice);
         await context.SaveChangesAsync();
         return Ok(cartDto);
         
@@ -130,21 +144,17 @@ public class ShoppingCartController(PcStoreDbContext context) : ControllerBase
     [HttpDelete]
     public async Task<ActionResult<ShoppingCartDto>> ClearCart()
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized("User ID claim is missing or invalid.");
-        }
+        var userIdClaim = GetCurrentUserId();
+        
         var cart = await context.ShoppingCart
             .Include(shoppingCart => shoppingCart.Items)
             .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userIdClaim);
         
         if(cart == null) return NotFound();
         
         context.ShoppingCartItem.RemoveRange(cart.Items);
-        var cartDto = MapCartToDto(cart);
         await context.SaveChangesAsync();
-        return Ok(cartDto);
+        return NoContent();
     }
 }
