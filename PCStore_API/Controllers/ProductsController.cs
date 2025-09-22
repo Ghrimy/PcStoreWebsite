@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
 using PCStore_API.Models;
 using PCStore_Shared;
+using PCStore_Shared.Models.Product;
+using ProductCategory = PCStore_Shared.ProductCategory;
 
 namespace PCStore_API.Controllers;
 
@@ -155,7 +157,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
         if (dto.ProductDescription != null) product.ProductDescription = dto.ProductDescription;
         if (dto.ProductImage != null) product.ProductImage = dto.ProductImage;
         if (dto.ProductBrand != null) product.ProductBrand = dto.ProductBrand;
-        if (dto.ProductCategory.HasValue) product.ProductCategory = dto.ProductCategory.Value;
+        if (dto.ProductCategory.HasValue) product.ProductCategory = (ProductCategory)dto.ProductCategory;
         if (dto.ProductStock.HasValue) product.ProductStock = dto.ProductStock.Value;
         if (dto.ProductPrice.HasValue) product.ProductPrice = dto.ProductPrice.Value;
 
@@ -176,7 +178,7 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
             ProductImage = dto.ProductImage,
             ProductPrice = dto.ProductPrice,
             ProductBrand = dto.ProductBrand,
-            ProductCategory = dto.ProductCategory,
+            ProductCategory = (ProductCategory)dto.ProductCategory,
             ProductStock = dto.ProductStock,
         };
         

@@ -1,7 +1,18 @@
-﻿using PCStore_Shared;
+﻿namespace PCStore_Shared.Models.Product;
 
-namespace PCStore_API.Models;
-
+public enum ProductCategory
+{
+    PcCase,
+    PcRam,
+    PcMotherboard,
+    PcCpuCooler,
+    PcPowerSupply,
+    PcGpu,
+    PcCpu,
+    PcStorage,
+    PcCaseFans,
+ 
+}
 public class ProductDto
 {
     public int ProductId { get; set; }

@@ -1,11 +1,9 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using PCStore_API.Data;
-using PCStore_API.Models;
+using PCStore_API.Models.ShoppingCart;
 using PCStore_Shared;
 
 namespace PCStore_API.Controllers;
@@ -251,4 +249,5 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         await context.SaveChangesAsync();
         return Ok(cartDto);
     }
+
 }

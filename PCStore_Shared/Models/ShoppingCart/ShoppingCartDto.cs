@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace PCStore_API.Models;
+﻿namespace PCStore_API.Models.ShoppingCart;
 
 public class ShoppingCartDto
 {

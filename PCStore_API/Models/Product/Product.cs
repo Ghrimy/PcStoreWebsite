@@ -28,7 +28,7 @@ public class Product
     public string? ProductImage { get; set; }
     
     [DataType(DataType.Currency)]
-    [Precision(18, 2)] // requires EF Core 6+
+    [Precision(18, 2)]
     public decimal ProductPrice { get; set; }
     
     public int ProductStock { get; set; }

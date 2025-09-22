@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using PCStore_Shared;
-
-namespace PCStore_API.Models;
+﻿namespace PCStore_Shared.Models.Product;
 
 public class ProductCreateDto
 {
