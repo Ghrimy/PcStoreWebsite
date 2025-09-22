@@ -13,4 +13,6 @@ public class Shoppingcart
     public List<ShoppingCartItem> Items { get; set; } = new();
 
     public decimal TotalPrice => Items.Sum(i => i.Product.ProductPrice * i.Quantity);
+    
+    public DateTime LastUpdated { get; set; }
 }
