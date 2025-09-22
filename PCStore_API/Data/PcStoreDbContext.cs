@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PCStore_API.Models.Order;
+using PCStore_API.Models.Product;
+using PCStore_API.Models.ShoppingCart;
 using PCStore_Shared;
 namespace PCStore_API.Data;
 

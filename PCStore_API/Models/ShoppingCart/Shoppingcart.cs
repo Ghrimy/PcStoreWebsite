@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PCStore_Shared;
 
-namespace PCStore_Shared;
+namespace PCStore_API.Models.ShoppingCart;
 
 public class Shoppingcart
 {

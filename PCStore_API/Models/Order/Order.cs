@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using PCStore_Shared;
 
-namespace PCStore_Shared;
+namespace PCStore_API.Models.Order;
 
 public class Order
 {
@@ -19,4 +20,5 @@ public class Order
     public string? OrderStatus { get; set; }
     public DateTime OrderDate { get; set; }
     public DateTime? OrderDateUpdated { get; set; }
+
 }

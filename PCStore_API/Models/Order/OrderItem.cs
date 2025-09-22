@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
-namespace PCStore_Shared;
+namespace PCStore_API.Models.Order;
 
 public class OrderItem
 {

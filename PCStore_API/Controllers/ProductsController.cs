@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
 using PCStore_API.Models;
+using PCStore_API.Models.Product;
 using PCStore_Shared;
 using PCStore_Shared.Models.Product;
-using ProductCategory = PCStore_Shared.ProductCategory;
+using ProductCategory = PCStore_API.Models.Product.ProductCategory;
 
 namespace PCStore_API.Controllers;
 
