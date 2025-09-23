@@ -1,21 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using PCStore_Shared.Models.Product;
 
 namespace PCStore_API.Models.Product;
 
-public enum ProductCategory
-{
-    PcCase,
-    PcRam,
-    PcMotherboard,
-    PcCpuCooler,
-    PcPowerSupply,
-    PcGpu,
-    PcCpu,
-    PcStorage,
-    PcCaseFans,
- 
-}
 public class Product
 {
     [Key]

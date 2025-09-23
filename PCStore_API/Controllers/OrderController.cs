@@ -1,13 +1,11 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using PCStore_API.Data;
 using PCStore_API.Models.Order;
 using PCStore_API.Models.ShoppingCart;
-using PCStore_Shared;
+using PCStore_API.Extensions;
 
 namespace PCStore_API.Controllers;
 
@@ -16,29 +14,14 @@ namespace PCStore_API.Controllers;
 [Route("api/[controller]")]
 public class OrderController(PcStoreDbContext context, ILogger<OrderController> logger) : ControllerBase
 {
-    private static OrderDto MapToOrderDto(Order order) => new OrderDto
-    {
-        OrderId = order.OrderId,
-        UserId = order.UserId,
-        Items = order.Items.Select(i => new OrderItemDto
-        {
-            ProductId = i.ProductId,
-            ProductName = i.ProductName,
-            ProductPrice = i.ProductPrice,
-            Quantity = i.Quantity
-        }).ToList(),
-        OrderTotal = order.OrderTotal,
-        OrderStatus = order.OrderStatus,
-        OrderDate = order.OrderDate,
-        OrderDateUpdated = order.OrderDateUpdated
-        
-    };
+
     private int? GetCurrentUserId()
     {
         //Gets the user id
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdClaim, out var userId)) return null;
         
+        //returns user id
         return userId;
     }
 
@@ -108,20 +91,24 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
                 OrderTotal = cart.Items.Sum(i => i.Quantity * i.Product.ProductPrice)
             };
 
+            //Removes the cart items and clears the cart
             context.Orders.Add(createOrder);
             context.ShoppingCartItem.RemoveRange(cart.Items);
             cart.Items.Clear();
 
+            //Saves the changes
             await context.SaveChangesAsync();
             logger.LogInformation("User {UserId} placed order {OrderId}", userId.Value, createOrder.OrderId);
+            //Commits the transaction
             await transactionAsync.CommitAsync();
             
             //Creates the order and returns it to the front end
-            var orderDto = MapToOrderDto(createOrder);
-            return Ok(orderDto);
+            var dto = createOrder.ToDto();
+            return Ok(dto);
         }
         catch (Exception ex)
         {
+            //If something goes wrong, rolls back the transaction
             await transactionAsync.RollbackAsync();
             logger.LogError(ex, "Checkout failed for user {UserId}", userId.Value);
             return StatusCode(500, "An error occurred while processing your order.");
@@ -132,35 +119,25 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
     [HttpGet("orders")]
     public async Task<ActionResult<OrderDto>> GetOrders()
     {
+        //Gets the user id
         var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        
+        //Gets the user orders
         var findOrders = await context.Orders
             .Where(i => i.UserId == userId)
             .Include(o => o.Items)
-            .OrderByDescending(i => i.OrderDate).ToListAsync();
+            .ToListAsync();
 
-
+        //Checks if the user has orders
         if (!findOrders.Any())
         {
             logger.LogInformation("User has no orders");
-            return NoContent();
+            return Ok(new List<OrderDto>());
         }
-        
-        var orderDtos = findOrders.Select(order => new OrderDto
-        {
-            OrderId = order.OrderId,
-            UserId = order.UserId,
-            Items = order.Items.Select(i => new OrderItemDto
-            {
-                ProductId = i.ProductId,
-                ProductName = i.ProductName,
-                ProductPrice = i.ProductPrice,
-                Quantity = i.Quantity
-            }).ToList(),
-            OrderTotal = order.OrderTotal,
-            OrderStatus = order.OrderStatus,
-            OrderDate = order.OrderDate,
-            OrderDateUpdated = order.OrderDateUpdated
-        }).ToList();
+      
+        //Maps the orders to the DTOs
+        var orderDtos = findOrders.Select(i => i.ToDto()).ToList();
 
         return Ok(orderDtos);
     }
@@ -169,18 +146,23 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
     [HttpGet("orders/{id:int}")]
     public async Task<ActionResult<OrderDto>> GetOrder(int id)
     {
+        //Gets the user id
         var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        
+        //Gets the user order
         var findOrder = await context.Orders
-            .Where(i => i.OrderId == id && i.UserId == userId)
             .Include(o => o.Items)
-            .OrderByDescending(i => i.OrderDate).FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(i => i.OrderId == id && i.UserId == userId);
+        
+        //Checks if the user has an order with the given id
         if (findOrder == null)
         {
             logger.LogInformation("User has no order with id {OrderId}", id);
             return NotFound();
         }
-        
-        var orderDto = MapToOrderDto(findOrder);
+        //Maps the order to the DTO
+        var orderDto = findOrder.ToDto();
 
         return Ok(orderDto);
     }

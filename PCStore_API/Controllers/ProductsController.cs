@@ -2,11 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
+using PCStore_API.Extensions;
 using PCStore_API.Models;
 using PCStore_API.Models.Product;
-using PCStore_Shared;
+using PCStore_Shared.Models;
 using PCStore_Shared.Models.Product;
-using ProductCategory = PCStore_API.Models.Product.ProductCategory;
+
 
 namespace PCStore_API.Controllers;
 
@@ -14,7 +15,7 @@ namespace PCStore_API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 
-public class ProductsController(PcStoreDbContext context) : ControllerBase
+public class ProductsController(PcStoreDbContext context, ILogger<ProductsController> logger) : ControllerBase
 {
     /// <summary>
     /// Front end Dto
@@ -25,56 +26,41 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
-        var products = await context.Products.Select(p => new ProductDto
-        {
-            ProductId = p.ProductId,
-            ProductName = p.ProductName,
-            ProductDescription = p.ProductDescription,
-            ProductImage = p.ProductImage,
-            ProductPrice = p.ProductPrice,
-            ProductBrand = p.ProductBrand,
-        }).ToListAsync();
+        //Gets all products and converts them to the front end Dto
+        var products = await context.Products.Select(p => p.ToDto()).ToListAsync();
         
-        return Ok(products);
+        logger.LogInformation("Products found: {Count}", products.Count);
+        return Ok(ApiResponse<List<ProductDto>>.SuccessResponse(products, "Products found"));
 
     }
 
     [Authorize(Roles = "User")]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ProductDto>> FindProduct(int id)
-    {
+    { 
+        //Gets the product and converts it to the front end Dto
         var product = await context.Products
             .Where(p => p.ProductId == id)
-            .Select(p => new ProductDto
-            {
-                ProductId = p.ProductId,
-                ProductName = p.ProductName,
-                ProductDescription = p.ProductDescription,
-                ProductImage = p.ProductImage,
-                ProductPrice = p.ProductPrice,
-                ProductBrand = p.ProductBrand,
+            .Select(p => p.ToDto()).FirstOrDefaultAsync();
 
-            }).FirstOrDefaultAsync();
-        
-        if (product == null) return NotFound();
+        //Checks if the product exists
+        if (product == null)
+        {
+            logger.LogInformation("Product not found with id {ProductId}", id);
+            return NotFound(ApiResponse<ProductDto>.FailureResponse("Product not found", new List<string> { "No product with given id" }));
 
-        return Ok(product);
+        }
+
+        return Ok(ApiResponse<ProductDto>.SuccessResponse(product, "Product found"));
 
     }
 
     /// <summary>
-    /// 
+    /// Filters the products
+    /// Uses the queryable extension methods to filter the products
+    /// Uses the productDto that only has the basic information for customer
     /// </summary>
-    /// <param name="category"></param>
-    /// <param name="brand"></param>
-    /// <param name="minPrice"></param>
-    /// <param name="maxPrice"></param>
-    /// <param name="inStockOnly"></param>
-    /// <param name="sortBy"></param>
-    /// <param name="sortOrder"></param>
-    /// <param name="pageNumber"></param>
-    /// <param name="pageSize"></param>
-    /// <returns></returns>
+
     [Authorize(Roles = "User")]
     [HttpGet("filter")]
     public async Task<ActionResult<List<ProductDto>>> FilterProduct(
@@ -90,13 +76,27 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     {
         var query = context.Products.AsQueryable();
         
+        //Filters the products based on the given parameters
         if(category.HasValue)
             query = query.Where(p => p.ProductCategory == category);
         
         if(!string.IsNullOrEmpty(brand))
-            query = query.Where(p => p.ProductBrand.ToUpper() == brand.ToUpper());
-
+            query = query.Where(p => p.ProductBrand.Equals(brand, StringComparison.OrdinalIgnoreCase));
         
+        if (minPrice.HasValue)
+            query = query.Where(p => p.ProductPrice >= minPrice.Value);
+
+        if (maxPrice.HasValue)
+            query = query.Where(p => p.ProductPrice <= maxPrice.Value);
+
+        if (pageNumber < 1) pageNumber = 1;
+        
+        if (inStockOnly)
+            query = query.Where(p => p.ProductStock > 0);
+        
+        var totalCount = await query.CountAsync();
+        
+        //Sorts the products based on the given parameters price or name        
         switch (sortBy?.ToLower())
         {
             case "price":
@@ -109,34 +109,37 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
                     ? query.OrderByDescending(p => p.ProductName)
                     : query.OrderBy(p => p.ProductName);
                 break;
+            default:
+                query = sortOrder == "asc"
+                    ? query.OrderBy(p => p.ProductName)
+                    : query.OrderByDescending(p => p.ProductName);
+                break;
         }
         
-        if (minPrice.HasValue)
-            query = query.Where(p => p.ProductPrice >= minPrice.Value);
-
-        if (maxPrice.HasValue)
-            query = query.Where(p => p.ProductPrice <= maxPrice.Value);
-
-        if (pageNumber >= 0)
-            query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
-        
-        if (inStockOnly)
-            query = query.Where(p => p.ProductStock > 0);
+        //Converts the products to the front end Dto
+        var products = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => p.ToDto())
+            .ToListAsync();
 
 
-        var products = await query.Select(p => new ProductDto()
+        //Checks if the products exist
+        if (products.Count == 0)
         {
-            ProductId = p.ProductId,
-            ProductName = p.ProductName,
-            ProductDescription = p.ProductDescription,
-            ProductImage = p.ProductImage,
-            ProductPrice = p.ProductPrice,
-            ProductBrand = p.ProductBrand,
-        }).ToListAsync();
+            var productIds = await query.Select(p => p.ProductId).ToListAsync();
+            logger.LogInformation("No products found with the given filters. Remaining IDs: {ProductIds}", string.Join(", ", productIds));
+            return NotFound(ApiResponse<string>.FailureResponse("No products found", new List<string>{ "No products found with the given filters" }));
+
+        }
         
-        if(products.Count == 0) return NotFound("No products found with the given filters");
-        
-        return Ok(products);
+        return Ok(ApiResponse<List<ProductDto>>.SuccessResponse(
+            products,
+            pageNumber,
+            pageSize,
+            totalCount,
+            "Products retrieved successfully"
+        ));
 
     }
 
@@ -144,34 +147,79 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
     /// Api endpoints for authorized users
     /// updates, creates and deletes products
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="dto"></param>
-    /// <returns></returns>
+
     [Authorize(Roles = "Employee,Admin")]
     [HttpPatch("/products/{id:int}")]
     public async Task<ActionResult<ProductUpdateDto>>  UpdateProduct([FromRoute] int id, [FromBody] ProductUpdateDto dto)
     {
-        var product = await context.Products.FindAsync(id);
-        if (product == null) return NotFound("Product not found");
+        //Checks if the values are valid and fits the model
+        if (!ModelState.IsValid)
+        {
+            logger.LogInformation("Model is not valid");
+            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Model is invalid", new List<string>{"Model is invalid"}));
+        }
         
-        if (dto.ProductName != null) product.ProductName = dto.ProductName;
-        if (dto.ProductDescription != null) product.ProductDescription = dto.ProductDescription;
-        if (dto.ProductImage != null) product.ProductImage = dto.ProductImage;
-        if (dto.ProductBrand != null) product.ProductBrand = dto.ProductBrand;
-        if (dto.ProductCategory.HasValue) product.ProductCategory = (ProductCategory)dto.ProductCategory;
-        if (dto.ProductStock.HasValue) product.ProductStock = dto.ProductStock.Value;
-        if (dto.ProductPrice.HasValue) product.ProductPrice = dto.ProductPrice.Value;
+        //Checks if the product exists
+        var product = await context.Products.FindAsync(id);
+        if (product == null)
+        {
+            logger.LogInformation("Product not found with id {ProductId}", id);
+            return NotFound(ApiResponse<ProductDto>.FailureResponse("No product found", new List<string>{ "Filter returned zero results" }));
+        }
 
+        //Updates the product with the given parameters
+        if (dto.ProductName != null)
+        {
+            logger.LogInformation("Product name updated to {ProductName}", dto.ProductName);
+            product.ProductName = dto.ProductName;
+        }
+        if (dto.ProductDescription != null)
+        {
+            logger.LogInformation("Product description updated to {ProductDescription}", dto.ProductDescription);
+            product.ProductDescription = dto.ProductDescription;
+        }
+        if (dto.ProductImage != null)
+        {
+            logger.LogInformation("Product image updated to {ProductImage}", dto.ProductImage);
+            product.ProductImage = dto.ProductImage;
+        }
+        if (dto.ProductBrand != null)
+        {
+            logger.LogInformation("Product brand updated to {ProductBrand}", dto.ProductBrand);
+            product.ProductBrand = dto.ProductBrand;
+        }
+        if (dto.ProductCategory.HasValue)
+        {
+            logger.LogInformation("Product category updated to {ProductCategory}", dto.ProductCategory.Value);
+            product.ProductCategory = dto.ProductCategory.Value;
+        }
+        if (dto.ProductStock.HasValue)
+        {
+            logger.LogInformation("Product stock updated to {ProductStock}", dto.ProductStock.Value);
+            product.ProductStock = dto.ProductStock.Value;
+        }
+        if (dto.ProductPrice.HasValue)
+        {
+            logger.LogInformation("Product price updated to {ProductPrice}", dto.ProductPrice.Value);
+            product.ProductPrice = dto.ProductPrice.Value;
+        }
 
         await context.SaveChangesAsync();
-        return Ok(product);
+        return Ok(ApiResponse<ProductUpdateDto>.SuccessResponse(product.ToUpdateDto(), "Product updated"));
     }
     
     [Authorize(Roles = "Employee,Admin")]
     [HttpPost("/products")]
     public async Task<ActionResult<ProductCreateDto>> CreateProduct([FromBody] ProductCreateDto dto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        //Creates a new product with the given parameters, checks if the values are valid and fits the model
+        if (!ModelState.IsValid)
+        {
+            logger.LogInformation("Model is not valid");
+            return BadRequest(ApiResponse<ProductCreateDto>.FailureResponse("Model is invalid", new List<string>{"Model is invalid"}));
+        }
+        
+        //Creates a new product with the given parameters
         var createProduct = new Product()
         {
             ProductName = dto.ProductName,
@@ -179,25 +227,30 @@ public class ProductsController(PcStoreDbContext context) : ControllerBase
             ProductImage = dto.ProductImage,
             ProductPrice = dto.ProductPrice,
             ProductBrand = dto.ProductBrand,
-            ProductCategory = (ProductCategory)dto.ProductCategory,
+            ProductCategory = dto.ProductCategory,
             ProductStock = dto.ProductStock,
         };
         
         context.Products.Add(createProduct);
+        logger.LogInformation("Created new product with id {ProductId}", createProduct.ProductId);
         await context.SaveChangesAsync();
-        return CreatedAtAction(nameof(FindProduct), new { id = createProduct.ProductId }, createProduct);
-
+        
+        createProduct.ToCreateDto();
+        return CreatedAtAction(nameof(FindProduct), new { id = createProduct.ProductId },
+            ApiResponse<ProductDto>.SuccessResponse(createProduct.ToDto(), "Product created successfully"));
     }
 
     [Authorize(Roles = "Employee,Admin")]
     [HttpDelete("/products/{id:int}")]
     public async Task<IActionResult> DeleteProduct([FromRoute] int id)
     {
+        //Deletes the product with the given id
         var product = await context.Products.FindAsync(id);
         if (product == null) return NotFound();
         
         context.Products.Remove(product);
+        logger.LogInformation("Deleted product with id {ProductId}", id);
         await context.SaveChangesAsync();
-        return NoContent();
+        return Ok(ApiResponse<string>.SuccessResponse(null, "Product deleted successfully"));
     }
 }
