@@ -1,4 +1,6 @@
-﻿namespace PCStore_Shared.Models.Product;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PCStore_Shared.Models.Product;
 
 public enum ProductCategory
 {
