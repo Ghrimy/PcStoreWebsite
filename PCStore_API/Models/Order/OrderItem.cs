@@ -7,7 +7,7 @@ public class OrderItem
 {
     [Key]
     public int ProductId { get; set; }
-    public string? ProductName { get; set; }
+    public string ProductName { get; set; }
     
     [DataType(DataType.Currency)]
     [Precision(18, 2)]

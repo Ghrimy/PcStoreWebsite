@@ -17,7 +17,7 @@ public class Order
     [DataType(DataType.Currency)]
     [Precision(18, 2)]
     public decimal OrderTotal { get; set; }
-    public string? OrderStatus { get; set; }
+    public string OrderStatus { get; set; }
     public DateTime OrderDate { get; set; }
     public DateTime? OrderDateUpdated { get; set; }
 

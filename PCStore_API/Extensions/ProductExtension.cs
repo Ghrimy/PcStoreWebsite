@@ -16,6 +16,7 @@ public static class ProductExtension
             ProductBrand = product.ProductBrand,
             ProductCategory = product.ProductCategory,
             ProductPrice = product.ProductPrice,
+            ProductDiscount = product.ProductDiscount
         };
     }
 
@@ -30,6 +31,7 @@ public static class ProductExtension
             ProductBrand = product.ProductBrand,
             ProductCategory = product.ProductCategory,
             ProductStock = product.ProductStock,
+            ProductDiscount = product.ProductDiscount,
         };
         
     }
@@ -45,6 +47,19 @@ public static class ProductExtension
             ProductBrand = product.ProductBrand,
             ProductCategory = product.ProductCategory,
             ProductStock = product.ProductStock,
+            ProductDiscount = product.ProductDiscount,
         };
+    }
+    
+    public static void UpdateFromDto(this Product product, ProductUpdateDto dto)
+    {
+        if (dto.ProductName != null) product.ProductName = dto.ProductName;
+        if (dto.ProductDescription != null) product.ProductDescription = dto.ProductDescription;
+        if (dto.ProductImage != null) product.ProductImage = dto.ProductImage;
+        if (dto.ProductBrand != null) product.ProductBrand = dto.ProductBrand;
+        if (dto.ProductCategory.HasValue) product.ProductCategory = dto.ProductCategory.Value;
+        if (dto.ProductStock.HasValue) product.ProductStock = dto.ProductStock.Value;
+        if (dto.ProductPrice.HasValue) product.ProductPrice = dto.ProductPrice.Value;
+        if (dto.ProductDiscount.HasValue) product.ProductDiscount = dto.ProductDiscount.Value;
     }
 }

@@ -11,12 +11,15 @@ public class ProductCreateDto
     public string? ProductDescription { get; set; }
     
     [Required]
-    [DataType(DataType.ImageUrl)]
+    [DataType(DataType.Url)]
     public string? ProductImage { get; set; }
     
     [Required]
     [Range(0, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
     public decimal ProductPrice { get; set; }
+    
+    [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
+    public decimal ProductDiscount { get; set; }
     
     [Required]
     [Range(0, int.MaxValue, ErrorMessage = "Stock must be greater than 0")]

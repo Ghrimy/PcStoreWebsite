@@ -1,5 +1,6 @@
+
 using Microsoft.EntityFrameworkCore;
-using PCStore_API;
+
 using PCStore_API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,9 @@ builder.Services
     .AddDbContext<PcStoreDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -30,10 +34,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseHttpsRedirection();
 app.MapControllers();
 
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/swagger", () => "Hello World!");
 
 app.Run();

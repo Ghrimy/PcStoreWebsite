@@ -3,7 +3,7 @@ using PCStore_Shared;
 
 namespace PCStore_API.Models.ShoppingCart;
 
-public class Shoppingcart
+public class ShoppingCart
 {
     [Key]
     public int ShoppingCartId { get; set; }

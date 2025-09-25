@@ -14,7 +14,7 @@ namespace PCStore_API.Controllers;
 [Route("api/[controller]")]
 public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCartController> logger) : ControllerBase
 {
-    private static ShoppingCartDto MapCartToDto(Shoppingcart cart) =>
+    private static ShoppingCartDto MapCartToDto(ShoppingCart cart) =>
         new ShoppingCartDto
         {
             UserId = cart.UserId,
@@ -36,7 +36,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         return userId;
     }
 
-    private async Task<Shoppingcart> GetUserCartAsync(int userId)
+    private async Task<ShoppingCart> GetUserCartAsync(int userId)
     {
        
         var findCart = await context.ShoppingCart
@@ -47,11 +47,11 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         return findCart;
     }
 
-    private async Task<Shoppingcart> CreateCartForUserAsync(int userId)
+    private async Task<ShoppingCart> CreateCartForUserAsync(int userId)
     {
         
 
-        var createCart =  new Shoppingcart()
+        var createCart =  new ShoppingCart()
         {
             UserId = userId,
             Items = new List<ShoppingCartItem>(),
@@ -65,7 +65,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         return createCart;
     }
     
-    private async Task<Shoppingcart> GetOrCreateUserCartAsync(int userId)
+    private async Task<ShoppingCart> GetOrCreateUserCartAsync(int userId)
     {
         return await GetUserCartAsync(userId) 
                ?? await CreateCartForUserAsync(userId);

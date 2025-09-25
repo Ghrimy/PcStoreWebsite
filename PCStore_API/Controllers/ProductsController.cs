@@ -21,7 +21,7 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
     /// Gets all products and search functions
     /// Uses productDto that only has the basic information for customer
     /// </summary>
-    [Authorize(Roles = "User")]
+    //[Authorize(Roles = "User")]
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
@@ -65,6 +65,7 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
     public async Task<ActionResult<List<ProductDto>>> FilterProduct(
         ProductCategory? category,
         string? brand,
+        bool HasDiscount,
         decimal? minPrice,
         decimal? maxPrice,
         bool inStockOnly = false,
@@ -78,6 +79,9 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
         //Filters the products based on the given parameters
         if(category.HasValue)
             query = query.Where(p => p.ProductCategory == category);
+
+        if (HasDiscount)
+            query = query.Where(p => p.ProductDiscount > 0);
         
         if(!string.IsNullOrEmpty(brand))
             query = query.Where(p => p.ProductBrand.Equals(brand, StringComparison.OrdinalIgnoreCase));
@@ -162,8 +166,8 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
         if (!ModelState.IsValid)
         {
             logger.LogInformation("Model is not valid");
-            return BadRequest(ApiResponse<ProductDto>
-                .FailureResponse("Model is invalid", new List<string>{"Model is invalid"}));
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Model is invalid", errors));
         }
         
         //Checks if the product exists
@@ -174,46 +178,21 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
             return NotFound(ApiResponse<ProductDto>.FailureResponse("No product found", new List<string>{ "Filter returned zero results" }));
         }
 
-        var updates = new List<string>();
-
         //Updates the product with the given parameters
-        if (dto.ProductName != null)
-        {
-            product.ProductName = dto.ProductName;
-            updates.Add($"Name: {dto.ProductName}");
-        }
-        if (dto.ProductDescription != null)
-        {
-            product.ProductDescription = dto.ProductDescription;
-            updates.Add($"Description: {dto.ProductDescription}");       
-        }
-        if (dto.ProductImage != null)
-        {
-            product.ProductImage = dto.ProductImage;
-            updates.Add($"Image: {dto.ProductImage}");       
-        }
-        if (dto.ProductBrand != null)
-        {
-            product.ProductBrand = dto.ProductBrand;
-            updates.Add($"Brand: {dto.ProductBrand}");      
-        }
-        if (dto.ProductCategory.HasValue)
-        {
-            product.ProductCategory = dto.ProductCategory.Value;
-            updates.Add($"Category: {dto.ProductCategory}");      
-        }
-        if (dto.ProductStock.HasValue)
-        {
-            product.ProductStock = dto.ProductStock.Value;
-            updates.Add($"Stock: {dto.ProductStock}");      
-        }
-        if (dto.ProductPrice.HasValue)
-        {
-            product.ProductPrice = dto.ProductPrice.Value;
-            updates.Add($"Price: {dto.ProductPrice}");     
-        }
+        product.UpdateFromDto(dto);
         
-        logger.LogInformation("Product with id {ProductId} updated. Updates: {Updates}", id, string.Join(", ", updates));
+        //Logs the changes made to the product
+        var entry = context.Entry(product);
+        foreach (var prop in entry.Properties)
+        {
+            if (prop.IsModified)
+            {
+                logger.LogInformation("Property {Property} changed from {Old} to {New}",
+                    prop.Metadata.Name,
+                    prop.OriginalValue,
+                    prop.CurrentValue);
+            }
+        }
 
         await context.SaveChangesAsync();
         return Ok(ApiResponse<ProductUpdateDto>.SuccessResponse(product.ToUpdateDto(), "Product updated"));
@@ -227,7 +206,8 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
         if (!ModelState.IsValid)
         {
             logger.LogInformation("Model is not valid");
-            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Model is invalid", new List<string>{"Model is invalid"}));
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Model is invalid", errors));
         }
 
         //Creates a new product with the given parameters
@@ -240,6 +220,7 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
             ProductBrand = dto.ProductBrand,
             ProductCategory = dto.ProductCategory,
             ProductStock = dto.ProductStock,
+            ProductDiscount = dto.ProductDiscount,
         };
 
         
@@ -261,6 +242,7 @@ public class ProductsController(PcStoreDbContext context, ILogger<ProductsContro
         if (product == null) 
             return NotFound(ApiResponse<ProductDto>.FailureResponse("Product not found", new List<string> { "No product with given id" }));
         
+        //Removes the product and logs the deletion
         context.Products.Remove(product);
         logger.LogInformation("Deleted product with id {ProductId}", id);
         await context.SaveChangesAsync();

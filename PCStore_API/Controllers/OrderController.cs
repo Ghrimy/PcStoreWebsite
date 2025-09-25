@@ -25,7 +25,7 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
         return userId;
     }
 
-    private async Task<Shoppingcart> GetUserCartAsync(int userId)
+    private async Task<ShoppingCart> GetUserCartAsync(int userId)
     {
        //Gets the user cart
         var findCart = await context.ShoppingCart
