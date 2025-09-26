@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using PCStore_Shared.Models.Product;
 
-namespace PCStore_Shared;
+namespace PCStore_Shared.Models.Product;
 
 public class ValidateCategoryAttribute : ValidationAttribute
 {

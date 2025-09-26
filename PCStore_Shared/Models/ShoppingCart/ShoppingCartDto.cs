@@ -1,9 +1,15 @@
-﻿namespace PCStore_API.Models.ShoppingCart;
+﻿using System.ComponentModel.DataAnnotations;
+namespace PCStore_Shared.Models.ShoppingCart;
 
 public class ShoppingCartDto
 {
-    public int UserId { get; set; }
+   
+    [Required]
     public List<ShoppingCartItemDto> ShoppingCartItems { get; set; } = new();
-    public decimal? TotalPrice { get; set; }
+    
+    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+    public decimal TotalPrice { get; set; }
+    
+    [Required]
     public DateTime LastUpdated { get; set; }
 }

@@ -1,4 +1,5 @@
 ﻿using PCStore_API.Models.Order;
+using PCStore_Shared.Models.Order;
 
 namespace PCStore_API.Extensions;
 

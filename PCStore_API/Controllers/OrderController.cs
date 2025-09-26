@@ -6,6 +6,7 @@ using PCStore_API.Data;
 using PCStore_API.Models.Order;
 using PCStore_API.Models.ShoppingCart;
 using PCStore_API.Extensions;
+using PCStore_Shared.Models.Order;
 
 namespace PCStore_API.Controllers;
 

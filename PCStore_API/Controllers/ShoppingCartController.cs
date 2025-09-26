@@ -3,8 +3,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
+using PCStore_API.Extensions;
 using PCStore_API.Models.ShoppingCart;
 using PCStore_Shared;
+using PCStore_Shared.Models;
+using PCStore_Shared.Models.ShoppingCart;
 
 namespace PCStore_API.Controllers;
 
@@ -14,20 +17,6 @@ namespace PCStore_API.Controllers;
 [Route("api/[controller]")]
 public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCartController> logger) : ControllerBase
 {
-    private static ShoppingCartDto MapCartToDto(ShoppingCart cart) =>
-        new ShoppingCartDto
-        {
-            UserId = cart.UserId,
-            ShoppingCartItems = cart.Items.Select(i => new ShoppingCartItemDto
-            {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                ProductPrice = i.Product.ProductPrice,
-                ProductName = i.Product.ProductName
-            }).ToList(),
-            TotalPrice = cart.Items.Sum(i => i.Quantity * i.Product.ProductPrice)
-        };
-
     private int? GetCurrentUserId()
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -76,7 +65,11 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
     public async Task<ActionResult<ShoppingCartDto>> GetCart()
     { 
         var userId = GetCurrentUserId();
-        if (userId == null) return Unauthorized();
+        if (userId == null)
+        {
+            logger.LogInformation("User not found");
+            return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found", new List<string>{"No user found"}));
+        }
 
         var cart = await GetOrCreateUserCartAsync(userId.Value);
         
@@ -86,11 +79,14 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
             logger.LogInformation("User {UserId} cart {CartId} was cleared due to inactivity", userId.Value, cart.ShoppingCartId);
             await context.SaveChangesAsync();
         }
-  
-        if (cart.Items.Count == 0) return NoContent();
+
+        if (cart.Items.Count == 0)
+        {
+            logger.LogInformation("Cart {cartId} is empty", cart.ShoppingCartId);
+            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(null, "Empty cart"));
+        }
         
-        var cartDto = MapCartToDto(cart);
-        return Ok(cartDto);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Request successful"));
     }
     
 
@@ -98,7 +94,11 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
     public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody] ShoppingCartItemDto item)
     {
         var userId = GetCurrentUserId();
-        if (userId == null) return Unauthorized();
+        if (userId == null)
+        {
+            logger.LogInformation("User not found");
+            return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found"));
+        }
 
         var cart = await GetOrCreateUserCartAsync(userId.Value);
         
@@ -108,13 +108,14 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         {
             if (existingItem.Quantity + item.Quantity <= existingItem.Product.ProductStock)
             {
+                logger.LogInformation("User {UserId} added {Quantity} of product {productId}", userId.Value, item.ProductId, item.Quantity);
                 existingItem.Quantity += item.Quantity;
             }
             else
             {
                 logger.LogInformation("User {UserId} tried to add {Quantity} of product {ProductId}, but stock was exceeded.",
                     userId.Value, item.Quantity, item.ProductId);
-                return BadRequest(new { error = "Quantity exceeds available stock." });
+                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Stock was exceeded"));
                 
             }
         }
@@ -123,7 +124,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
             if (item.Quantity < 0)
             {
                 logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be negative.", item.ProductId, item.Quantity);
-                return BadRequest(new { error = "Quantity cannot be negative." });
+                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be negative"));
             }
             
             
@@ -131,7 +132,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
             if (product == null)
             {
                 logger.LogInformation("Product {ProductId} not found.", item.ProductId);
-                return NotFound();
+                return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found"));
             }
             cart.Items.Add(new ShoppingCartItem
             {
@@ -141,30 +142,36 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
                 
             });
         }
-        
         cart.LastUpdated = DateTime.UtcNow;
-        var cartDto = MapCartToDto(cart);
         
         await context.SaveChangesAsync();
-        return Ok(cartDto);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Added product to cart"));
     }
 
     [HttpPut("items/{productId:int}/{amount:int}")]
     public async Task<ActionResult<ShoppingCartItemDto>> UpdateItemInCart(int productId, int amount)
     {
         var userId = GetCurrentUserId();
-        if (userId == null) return Unauthorized();
+        if (userId == null)
+        {
+            logger.LogInformation("User not found");
+            return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found", new List<string>{"No user found"}));
+        }
 
         var cart = await GetOrCreateUserCartAsync(userId.Value);
         
         var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
-        if(existingItem == null) return NotFound();
+        if (existingItem == null)
+        {
+            logger.LogInformation("Item {ProductId} not found.", productId);
+            return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found", new List<string>{$"No product {productId} found"}));
+        }
 
         switch (amount)
         {
             case 0:
                 logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be zero.", productId, amount);
-                return BadRequest(new { error = "Quantity cannot be zero." });
+                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be zero"));
             case <= 0:
                 logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be less than zero.", productId, amount);
                 cart.Items.Remove(existingItem);
@@ -179,18 +186,16 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
                 if (amount > existingItem.Product.ProductStock)
                 {
                     logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be more than stock.", productId, amount);
-                    return BadRequest(new { error = "Quantity exceeds available stock." });
+                    return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be more than stock"));
                 }
 
                 break;
             }
         }
-        
         cart.LastUpdated = DateTime.UtcNow;
-        var cartDto = MapCartToDto(cart);
         
         await context.SaveChangesAsync();
-        return Ok(cartDto);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Updated item in cart"));
     }
 
 
@@ -198,18 +203,26 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
     public async Task<ActionResult> RemoveItemFromCart(int productId, int amount)
     {
         var userId = GetCurrentUserId();
-        if (userId == null) return Unauthorized();
+        if (userId == null)
+        {
+            logger.LogInformation("User not found");
+            return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found", new List<string>{"No user found"}));
+        }
         
         var cart = await GetOrCreateUserCartAsync(userId.Value);
         
         var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
-        if(existingItem == null) return NotFound();
+        if (existingItem == null)
+        {
+            logger.LogInformation("Item {ProductId} not found.", productId);
+            return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found", new List<string>{$"No product {productId} found"}));
+        }
 
         switch (existingItem.Quantity - amount)
         {
             case <0:
                 logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be negative.", productId, amount);
-                return BadRequest(new { error = "Quantity cannot be negative." });
+                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be negative"));
                 break;
             
             case 0:
@@ -224,10 +237,9 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         }
         
         cart.LastUpdated = DateTime.UtcNow;
-        var cartDto = MapCartToDto(cart);
 
         await context.SaveChangesAsync();
-        return Ok(cartDto);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Removed item from cart"));
     }
     
 
@@ -244,10 +256,9 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         cart.LastUpdated = DateTime.UtcNow;
         
         logger.LogInformation("User {UserId} cleared cart", userId.Value);
-        var cartDto = MapCartToDto(cart);
         
         await context.SaveChangesAsync();
-        return Ok(cartDto);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Cleared cart"));
     }
 
 }
