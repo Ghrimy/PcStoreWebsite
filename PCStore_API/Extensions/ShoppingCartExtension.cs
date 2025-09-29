@@ -11,13 +11,15 @@ public static class ShoppingCartExtension
         {
             ShoppingCartItems = shoppingCart.Items.Select(i => new ShoppingCartItemDto
             {
+                ProductName = i.Product.ProductName,
                 ProductId = i.ProductId,
-                Quantity = i.Quantity,
                 ProductPrice = i.Product.ProductPrice,
-                ProductName = i.Product.ProductName
+                Quantity = i.Quantity
+
             }).ToList(),
-            TotalPrice = shoppingCart.Items.Sum(i => i.Quantity * i.Product.ProductPrice)
+            LastUpdated = shoppingCart.LastUpdated,
         };
+
     }
 
 
@@ -31,5 +33,4 @@ public static class ShoppingCartExtension
             Quantity = shoppingCartItem.Quantity
         };
     }
-    
 }

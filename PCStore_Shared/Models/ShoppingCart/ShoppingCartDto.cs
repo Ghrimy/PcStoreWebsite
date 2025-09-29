@@ -3,12 +3,10 @@ namespace PCStore_Shared.Models.ShoppingCart;
 
 public class ShoppingCartDto
 {
-   
-    [Required]
     public List<ShoppingCartItemDto> ShoppingCartItems { get; set; } = new();
     
     [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
-    public decimal TotalPrice { get; set; }
+    public decimal TotalPrice => ShoppingCartItems.Sum(i => i.TotalPrice ?? 0);
     
     [Required]
     public DateTime LastUpdated { get; set; }

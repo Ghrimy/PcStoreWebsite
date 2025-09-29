@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -91,7 +92,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
     
 
     [HttpPost("items")]
-    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody] ShoppingCartItemDto item)
+    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody][Required] ShoppingCartUpdateDto item)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
@@ -148,8 +149,8 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Added product to cart"));
     }
 
-    [HttpPut("items/{productId:int}/{amount:int}")]
-    public async Task<ActionResult<ShoppingCartItemDto>> UpdateItemInCart(int productId, int amount)
+    [HttpPut("items")]
+    public async Task<ActionResult<ShoppingCartDto>> UpdateItemsInCart([FromBody][Required] List<ShoppingCartUpdateDto> items)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
@@ -159,89 +160,101 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         }
 
         var cart = await GetOrCreateUserCartAsync(userId.Value);
-        
-        var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
-        if (existingItem == null)
-        {
-            logger.LogInformation("Item {ProductId} not found.", productId);
-            return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found", new List<string>{$"No product {productId} found"}));
-        }
 
-        switch (amount)
+        foreach (var product in items)
         {
-            case 0:
-                logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be zero.", productId, amount);
-                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be zero"));
-            case <= 0:
-                logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be less than zero.", productId, amount);
-                cart.Items.Remove(existingItem);
-                break;
-            default:
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == product.ProductId);
+            if (existingItem == null)
             {
-                if (amount <= existingItem.Product.ProductStock)
-                {
-                    existingItem.Quantity = amount;
-                }
-
-                if (amount > existingItem.Product.ProductStock)
-                {
-                    logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be more than stock.", productId, amount);
-                    return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be more than stock"));
-                }
-
-                break;
+                logger.LogInformation("Item {ProductId} not found.", product.ProductId);
+                return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found", new List<string>{$"No product {product.ProductId} found"}));
             }
+            
+            
+            switch (product.Quantity)
+            {
+                case 0:
+                    logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be zero.", product.ProductId, product.Quantity);
+                    return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be zero"));
+                case <= 0:
+                    logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be less than zero.", product.ProductId, product.Quantity);
+                    cart.Items.Remove(existingItem);
+                    break;
+                default:
+                {
+                    if (product.Quantity <= existingItem.Product.ProductStock)
+                    {
+                        existingItem.Quantity = product.Quantity;
+                    }
+
+                    if (product.Quantity > existingItem.Product.ProductStock)
+                    {
+                        logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be more than stock.", product.ProductId, product.Quantity);
+                        return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be more than stock"));
+                    }
+
+                    break;
+                }
+            }
+            cart.LastUpdated = DateTime.UtcNow;
         }
-        cart.LastUpdated = DateTime.UtcNow;
-        
         await context.SaveChangesAsync();
         return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Updated item in cart"));
     }
 
 
-    [HttpDelete("items/{productId:int}/{amount:int}")]
-    public async Task<ActionResult> RemoveItemFromCart(int productId, int amount)
+    [HttpDelete("items")]
+    public async Task<ActionResult> RemoveItemFromCart([FromBody] [Required] List<ShoppingCartUpdateDto> item)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
         {
             logger.LogInformation("User not found");
-            return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found", new List<string>{"No user found"}));
+            return Unauthorized(
+                ApiResponse<ShoppingCartDto>.FailureResponse("User not found", new List<string> { "No user found" }));
         }
-        
+
         var cart = await GetOrCreateUserCartAsync(userId.Value);
-        
-        var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == productId);
-        if (existingItem == null)
-        {
-            logger.LogInformation("Item {ProductId} not found.", productId);
-            return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found", new List<string>{$"No product {productId} found"}));
-        }
 
-        switch (existingItem.Quantity - amount)
+
+        foreach (var product in item)
         {
-            case <0:
-                logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be negative.", productId, amount);
-                return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be negative"));
-                break;
-            
-            case 0:
-                logger.LogInformation("User {UserId} removed product {ProductId} from cart", userId.Value, productId);
-                cart.Items.Remove(existingItem);
-                break;
-            
-            default:
-                logger.LogInformation("User {UserId} removed {Quantity} of product {ProductId} from cart", userId.Value, amount, productId);
-                existingItem.Quantity -= amount;
-                break;
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == product.ProductId);
+            if (existingItem == null)
+            {
+                logger.LogInformation("Item {ProductId} not found.", product.ProductId);
+                return NotFound(ApiResponse<ShoppingCartDto>.FailureResponse("Product not found",
+                    new List<string> { $"No product {product.ProductId} found" }));
+            }
+
+            switch (existingItem.Quantity - product.Quantity)
+            {
+                case < 0:
+                    logger.LogInformation("Product {ProductId} with Quantity: {Quantity}  can't be negative.",
+                        product.ProductId, product.Quantity);
+                    return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse("Quantity can't be negative"));
+                    break;
+
+                case 0:
+                    logger.LogInformation("User {UserId} removed product {ProductId} from cart", userId.Value,
+                        product.ProductId);
+                    cart.Items.Remove(existingItem);
+                    break;
+
+                default:
+                    logger.LogInformation("User {UserId} removed {Quantity} of product {ProductId} from cart",
+                        userId.Value, product.Quantity, product.ProductId);
+                    existingItem.Quantity -= product.Quantity;
+                    break;
+            }
+            cart.LastUpdated = DateTime.UtcNow;
         }
         
-        cart.LastUpdated = DateTime.UtcNow;
-
         await context.SaveChangesAsync();
         return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Removed item from cart"));
     }
-    
+
+
 
     [HttpDelete]
     public async Task<ActionResult<ShoppingCartDto>> ClearCart()
