@@ -33,4 +33,5 @@ public static class ShoppingCartExtension
             Quantity = shoppingCartItem.Quantity
         };
     }
+
 }

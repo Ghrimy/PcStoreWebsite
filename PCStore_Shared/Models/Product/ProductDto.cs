@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PCStore_Shared.Models.Product.Validation;
 
 namespace PCStore_Shared.Models.Product;
 

@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
+﻿
 namespace PCStore_Shared.Models.ShoppingCart;
 
 public class ShoppingCartItemDto

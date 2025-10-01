@@ -21,5 +21,7 @@ public class ApiResponse<T>
     public static ApiResponse<T> FailureResponse(string message, List<string>? errors = null)
         => new ApiResponse<T> { Success = false, Message = message, Errors = errors };
     
+    public static ApiResponse<T> PartialFailureResponse(T data, string message, List<string>? errors = null)
+        => new ApiResponse<T> { Success = false, Message = message, Errors = errors, Data = data};
     
 }
