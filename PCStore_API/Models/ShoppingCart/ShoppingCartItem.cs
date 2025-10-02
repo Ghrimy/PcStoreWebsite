@@ -4,8 +4,7 @@ namespace PCStore_API.Models.ShoppingCart;
 
 public class ShoppingCartItem
 {
-    [Key]
-    public int ShoppingCartItemId { get; set; }
+    [Key] public int ShoppingCartItemId { get; set; }
 
     public int ShoppingCartId { get; set; }
     public ShoppingCart ShoppingCart { get; set; }

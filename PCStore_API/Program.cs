@@ -1,7 +1,7 @@
-
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.ApiResponse;
 using PCStore_API.Data;
+using PCStore_API.Services.ShoppingCartServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +15,7 @@ builder.Services.AddSwaggerGen();
 
 // Configures application db context
 builder.Services.AddDbContext<PcStoreDbContext>();
+builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 
 //Database connection
 builder.Services
@@ -36,6 +37,7 @@ if (app.Environment.IsDevelopment())
 
 // Add exception handling middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Configure authentication
 app.UseAuthentication();

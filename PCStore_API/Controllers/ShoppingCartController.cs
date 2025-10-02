@@ -2,54 +2,41 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PCStore_API.ApiResponse;
-using PCStore_API.Data;
 using PCStore_API.Extensions;
-using PCStore_API.Models.ShoppingCart;
-using PCStore_API.Services;
-using PCStore_Shared.Models;
+using PCStore_API.Services.ShoppingCartServices;
 using PCStore_Shared.Models.ShoppingCart;
 
 namespace PCStore_API.Controllers;
 
-
 [ApiController]
 [Authorize(Roles = "User,Admin")]
 [Route("api/[controller]")]
-public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCartController> logger, IShoppingCartService shoppingCartService) : ControllerBase
+public class ShoppingCartController(IShoppingCartService shoppingCartService) : ControllerBase
 {
     private int? GetCurrentUserId()
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdClaim, out var userId)) return null;
-        
+
         return userId;
     }
 
     [HttpGet]
     public async Task<ActionResult<ShoppingCartDto?>> GetCart()
-    { 
+    {
         //Gets userId and checks if it is valid
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found"));
 
         //Gets the cart and converts it to the front end Dto
-        try
-        {
-
-            var cart = await shoppingCartService.GetShoppingCartAsync(userId.Value);
-            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Request successful"));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse(ex.Message));
-        }
+        var cart = await shoppingCartService.GetShoppingCartAsync(userId.Value);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart.ToDto(), "Found cart"));
     }
-    
+
     [HttpPost("items")]
-    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody][Required] ShoppingCartAddDto item)
+    public async Task<ActionResult<ShoppingCartDto>> AddItemToCart([FromBody] [Required] ShoppingCartAddDto item)
     {
         //Gets userId and checks if it is valid
         var userId = GetCurrentUserId();
@@ -58,35 +45,22 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
 
         //Adds the item to the cart and returns the cart
         //Converts cart to Dto and returns it
-        try
-        {
-            var cart = await shoppingCartService.AddToShoppingCartAsync(userId.Value, item);
-            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Item added successfully"));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse(ex.Message));
-        }
+
+        var cart = await shoppingCartService.AddToShoppingCartAsync(userId.Value, item);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Item added successfully"));
     }
 
     [HttpPut("items")]
-    public async Task<ActionResult<ShoppingCartDto>> UpdateItemsInCart([FromBody] [Required] List<ShoppingCartUpdateDto> items)
+    public async Task<ActionResult<ShoppingCartDto>> UpdateItemsInCart(
+        [FromBody] [Required] List<ShoppingCartUpdateDto> items)
     {
         //Gets userId and checks if it is valid
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found"));
 
-        try
-        {
-            var cart = await shoppingCartService.UpdateShoppingCartAsync(userId.Value, items);
-            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Items updated successfully"));
-
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse(ex.Message));
-        }
+        var cart = await shoppingCartService.UpdateShoppingCartAsync(userId.Value, items);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Items updated successfully"));
     }
 
     [HttpDelete("items")]
@@ -97,15 +71,8 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         if (userId == null)
             return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found"));
 
-        try
-        {
-            var cart = await shoppingCartService.RemoveFromShoppingCartAsync(userId.Value, items);
-            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Item removed successfully"));
-        }
-        catch (ArgumentException exception)
-        {
-            return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse(exception.Message));
-        }
+        var cart = await shoppingCartService.RemoveFromShoppingCartAsync(userId.Value, items);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Item removed successfully"));
     }
 
     [HttpDelete]
@@ -116,17 +83,7 @@ public class ShoppingCartController(PcStoreDbContext context, ILogger<ShoppingCa
         if (userId == null)
             return Unauthorized(ApiResponse<ShoppingCartDto>.FailureResponse("User not found"));
 
-        try
-        {
-            var cart = await shoppingCartService.ClearShoppingCartAsync(userId.Value);
-            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Cart cleared successfully"));
-
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ApiResponse<ShoppingCartDto>.FailureResponse(ex.Message));
-        }
-
+        var cart = await shoppingCartService.ClearShoppingCartAsync(userId.Value);
+        return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart, "Cart cleared successfully"));
     }
-
 }

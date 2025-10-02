@@ -7,7 +7,7 @@ public static class ProductExtension
 {
     public static ProductDto ToDto(this Product product)
     {
-        return new ProductDto()
+        return new ProductDto
         {
             ProductId = product.ProductId,
             ProductName = product.ProductName,
@@ -22,7 +22,7 @@ public static class ProductExtension
 
     public static ProductCreateDto ToCreateDto(this Product product)
     {
-        return new ProductCreateDto()
+        return new ProductCreateDto
         {
             ProductName = product.ProductName,
             ProductDescription = product.ProductDescription,
@@ -31,14 +31,13 @@ public static class ProductExtension
             ProductBrand = product.ProductBrand,
             ProductCategory = product.ProductCategory,
             ProductStock = product.ProductStock,
-            ProductDiscount = product.ProductDiscount,
+            ProductDiscount = product.ProductDiscount
         };
-        
     }
 
     public static ProductUpdateDto ToUpdateDto(this Product product)
     {
-        return new ProductUpdateDto()
+        return new ProductUpdateDto
         {
             ProductName = product.ProductName,
             ProductDescription = product.ProductDescription,
@@ -47,10 +46,10 @@ public static class ProductExtension
             ProductBrand = product.ProductBrand,
             ProductCategory = product.ProductCategory,
             ProductStock = product.ProductStock,
-            ProductDiscount = product.ProductDiscount,
+            ProductDiscount = product.ProductDiscount
         };
     }
-    
+
     public static void UpdateFromDto(this Product product, ProductUpdateDto dto)
     {
         if (dto.ProductName != null) product.ProductName = dto.ProductName;

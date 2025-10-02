@@ -10,13 +10,10 @@ public static class OrderExtensions
     {
         return new OrderDto
         {
-            OrderId = order.OrderId,
             UserId = order.UserId,
             Items = order.Items.Select(i => new OrderItemDto
             {
                 ProductId = i.ProductId,
-                ProductName = i.ProductName,
-                ProductPrice = i.ProductPrice,
                 Quantity = i.Quantity
             }).ToList(),
             OrderTotal = order.OrderTotal,
@@ -29,12 +26,10 @@ public static class OrderExtensions
     // order item to dto
     public static OrderItemDto ToDto(this OrderItem orderItem)
     {
-        return new OrderItemDto()
+        return new OrderItemDto
         {
             ProductId = orderItem.ProductId,
-            ProductName = orderItem.ProductName,
-            ProductPrice = orderItem.ProductPrice,
-            Quantity = orderItem.Quantity,
+            Quantity = orderItem.Quantity
         };
     }
 }

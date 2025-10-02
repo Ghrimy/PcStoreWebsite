@@ -3,32 +3,30 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
+using PCStore_API.Extensions;
 using PCStore_API.Models.Order;
 using PCStore_API.Models.ShoppingCart;
-using PCStore_API.Extensions;
 using PCStore_Shared.Models.Order;
 
 namespace PCStore_API.Controllers;
-
 
 [ApiController]
 [Route("api/[controller]")]
 public class OrderController(PcStoreDbContext context, ILogger<OrderController> logger) : ControllerBase
 {
-
     private int? GetCurrentUserId()
     {
         //Gets the user id
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdClaim, out var userId)) return null;
-        
+
         //returns user id
         return userId;
     }
 
     private async Task<ShoppingCart> GetUserCartAsync(int userId)
     {
-       //Gets the user cart
+        //Gets the user cart
         var findCart = await context.ShoppingCart
             .Include(shoppingCart => shoppingCart.Items)
             .ThenInclude(shoppingCartItem => shoppingCartItem.Product)
@@ -36,7 +34,7 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
 
         return findCart;
     }
-    
+
     [Authorize(Roles = "User")]
     [HttpPost("checkout")]
     public async Task<ActionResult<OrderDto>> Checkout()
@@ -56,33 +54,30 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
         //Checks if the stock is enough
         foreach (var item in cart.Items.Where(item => item.Quantity > item.Product.ProductStock))
         {
-            logger.LogInformation("User {UserId} tried to add {Quantity} of product {ProductId}, but stock was exceeded.",
+            logger.LogInformation(
+                "User {UserId} tried to add {Quantity} of product {ProductId}, but stock was exceeded.",
                 userId.Value, item.Quantity, item.ProductId);
             return BadRequest(new { error = "Quantity exceeds available stock." });
         }
-        
+
         await using var transactionAsync = await context.Database.BeginTransactionAsync();
 
         try
         {
-
             //Updates the stock
-            foreach (var item in cart.Items)
-            {
-                item.Product.ProductStock -= item.Quantity;
-            }
+            foreach (var item in cart.Items) item.Product.ProductStock -= item.Quantity;
 
             //Creates the order items
-            var cartItems = cart.Items.Select(item => new OrderItem()
+            var cartItems = cart.Items.Select(item => new OrderItem
             {
                 ProductId = item.ProductId,
                 ProductName = item.Product.ProductName,
                 ProductPrice = item.Product.ProductPrice,
-                Quantity = item.Quantity,
+                Quantity = item.Quantity
             }).ToList();
 
             //Creates the order
-            var createOrder = new Order()
+            var createOrder = new Order
             {
                 UserId = userId.Value,
                 Items = cartItems,
@@ -102,7 +97,7 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
             logger.LogInformation("User {UserId} placed order {OrderId}", userId.Value, createOrder.OrderId);
             //Commits the transaction
             await transactionAsync.CommitAsync();
-            
+
             //Creates the order and returns it to the front end
             var dto = createOrder.ToDto();
             return Ok(dto);
@@ -123,7 +118,7 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
         //Gets the user id
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        
+
         //Gets the user orders
         var findOrders = await context.Orders
             .Where(i => i.UserId == userId)
@@ -136,13 +131,13 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
             logger.LogInformation("User has no orders");
             return Ok(new List<OrderDto>());
         }
-      
+
         //Maps the orders to the DTOs
         var orderDtos = findOrders.Select(i => i.ToDto()).ToList();
 
         return Ok(orderDtos);
     }
-    
+
     [Authorize(Roles = "User")]
     [HttpGet("orders/{id:int}")]
     public async Task<ActionResult<OrderDto>> GetOrder(int id)
@@ -150,18 +145,19 @@ public class OrderController(PcStoreDbContext context, ILogger<OrderController> 
         //Gets the user id
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        
+
         //Gets the user order
         var findOrder = await context.Orders
             .Include(o => o.Items)
             .FirstOrDefaultAsync(i => i.OrderId == id && i.UserId == userId);
-        
+
         //Checks if the user has an order with the given id
         if (findOrder == null)
         {
             logger.LogInformation("User has no order with id {OrderId}", id);
             return NotFound();
         }
+
         //Maps the order to the DTO
         var orderDto = findOrder.ToDto();
 

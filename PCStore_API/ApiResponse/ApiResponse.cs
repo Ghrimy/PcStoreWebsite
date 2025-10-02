@@ -1,6 +1,5 @@
 ﻿namespace PCStore_API.ApiResponse;
 
-
 //Generic response class
 public class ApiResponse<T>
 {
@@ -13,15 +12,27 @@ public class ApiResponse<T>
     public int TotalCount { get; set; }
 
     public static ApiResponse<T> SuccessResponse(T data, string message = "Request successful")
-        => new ApiResponse<T> { Success = true, Message = message, Data = data };
-    
-    public static ApiResponse<T> SuccessResponse(T data, int pageNumber, int pageSize, int totalCount, string message = "Request successful")
-        => new ApiResponse<T> { Success = true, Message = message, Data = data, PageNumber = pageNumber, PageSize = pageSize, TotalCount = totalCount };
+    {
+        return new ApiResponse<T> { Success = true, Message = message, Data = data };
+    }
+
+    public static ApiResponse<T> SuccessResponse(T data, int pageNumber, int pageSize, int totalCount,
+        string message = "Request successful")
+    {
+        return new ApiResponse<T>
+        {
+            Success = true, Message = message, Data = data, PageNumber = pageNumber, PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
 
     public static ApiResponse<T> FailureResponse(string message, List<string>? errors = null)
-        => new ApiResponse<T> { Success = false, Message = message, Errors = errors };
-    
+    {
+        return new ApiResponse<T> { Success = false, Message = message, Errors = errors };
+    }
+
     public static ApiResponse<T> PartialFailureResponse(T data, string message, List<string>? errors = null)
-        => new ApiResponse<T> { Success = false, Message = message, Errors = errors, Data = data};
-    
+    {
+        return new ApiResponse<T> { Success = false, Message = message, Errors = errors, Data = data };
+    }
 }

@@ -1,7 +1,7 @@
 ﻿using PCStore_API.Models.ShoppingCart;
 using PCStore_Shared.Models.ShoppingCart;
 
-namespace PCStore_API.Services;
+namespace PCStore_API.Services.ShoppingCartServices;
 
 public interface IShoppingCartService
 {

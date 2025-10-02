@@ -15,11 +15,9 @@ public static class ShoppingCartExtension
                 ProductId = i.ProductId,
                 ProductPrice = i.Product.ProductPrice,
                 Quantity = i.Quantity
-
             }).ToList(),
-            LastUpdated = shoppingCart.LastUpdated,
+            LastUpdated = shoppingCart.LastUpdated
         };
-
     }
 
 
@@ -33,5 +31,4 @@ public static class ShoppingCartExtension
             Quantity = shoppingCartItem.Quantity
         };
     }
-
 }

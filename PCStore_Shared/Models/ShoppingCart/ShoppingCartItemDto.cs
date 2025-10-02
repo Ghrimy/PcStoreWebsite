@@ -1,5 +1,4 @@
-﻿
-namespace PCStore_Shared.Models.ShoppingCart;
+﻿namespace PCStore_Shared.Models.ShoppingCart;
 
 public class ShoppingCartItemDto
 {

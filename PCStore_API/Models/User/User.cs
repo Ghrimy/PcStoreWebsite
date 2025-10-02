@@ -8,16 +8,16 @@ public enum UserCategory
     Employee,
     Admin
 }
+
 public class User
 {
-    [Key]
-    public int UserId { get; set; }
-    
+    [Key] public int UserId { get; set; }
+
     // login
     public string? UserName { get; set; }
     public string? Password { get; set; }
     public UserCategory UserCategory { get; set; }
-    
+
     // personal information
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
