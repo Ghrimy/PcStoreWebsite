@@ -1,6 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
-
+using PCStore_API.ApiResponse;
 using PCStore_API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +34,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Add exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Configure authentication
 app.UseAuthentication();
 app.UseAuthorization();
 

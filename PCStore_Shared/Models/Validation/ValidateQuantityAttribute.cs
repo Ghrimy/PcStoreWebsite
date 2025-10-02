@@ -1,11 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PCStore_Shared.Models.ShoppingCart.Validation;
+namespace PCStore_Shared.Models.Validation;
 
-public class ValidateQuantityAttribute : ValidationAttribute
+public class ValidateQuantityAttribute(int minValue, int maxValue) : ValidationAttribute
 {
-    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    private readonly int _minValue = minValue;
+    private readonly int _maxValue = maxValue;
+
+    protected override ValidationResult? IsValid(object? value, ValidationContext context)
     {
-        return value is > 0 ? ValidationResult.Success : new ValidationResult("Invalid quantity amount.");
+        if (value is not int quantity) return new ValidationResult("Value is not an integer.");
+        if (quantity < _minValue || quantity > _maxValue) return new ValidationResult($"Quantity must be between {_minValue} and {_maxValue}.");
+        return ValidationResult.Success;
     }
 }

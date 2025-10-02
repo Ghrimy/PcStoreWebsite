@@ -1,4 +1,4 @@
-﻿namespace PCStore_Shared.Models;
+﻿namespace PCStore_API.ApiResponse;
 
 
 //Generic response class
