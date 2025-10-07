@@ -20,3 +20,10 @@ public class BusinessRuleException : Exception
     {
     }
 }
+
+public class DbUpdateConcurrencyException : Exception
+{
+    public DbUpdateConcurrencyException(string message) : base(message)
+    {
+    }
+}

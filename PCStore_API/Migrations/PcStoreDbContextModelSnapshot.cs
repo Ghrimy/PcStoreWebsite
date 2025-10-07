@@ -113,7 +113,13 @@ namespace PCStore_API.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductStock")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
 
                     b.HasKey("ProductId");
 
@@ -130,6 +136,9 @@ namespace PCStore_API.Migrations
 
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");

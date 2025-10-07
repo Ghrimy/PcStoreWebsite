@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using PCStore_Shared;
 
 namespace PCStore_API.Models.ShoppingCart;
@@ -11,8 +13,9 @@ public class ShoppingCart
     public User User { get; set; }
 
     public List<ShoppingCartItem> Items { get; set; } = new();
-
-    public decimal TotalPrice => Items.Sum(i => i.Product.ProductPrice * i.Quantity);
+    
+    public decimal TotalPrice { get; private set; }
 
     public DateTime LastUpdated { get; set; }
+    
 }

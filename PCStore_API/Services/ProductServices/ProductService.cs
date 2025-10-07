@@ -9,6 +9,7 @@ namespace PCStore_API.Services.ProductServices;
 
 public class ProductService(PcStoreDbContext context, ILogger<ProductService> logger) : IProductService
 {
+
     public async Task<List<ProductDto>> GetAllProductsAsync()
     {
         var products = await context.Products.Select(p => p.ToDto()).ToListAsync();
@@ -28,7 +29,7 @@ public class ProductService(PcStoreDbContext context, ILogger<ProductService> lo
 
         return products;
     }
-
+    
     public async Task<List<ProductDto>> SearchProductsAsync(ProductCategory? category, string? brand, bool hasDiscount,
         decimal? minPrice,
         decimal? maxPrice, bool inStockOnly = false, string? sortBy = null, string sortOrder = "asc",
@@ -54,8 +55,9 @@ public class ProductService(PcStoreDbContext context, ILogger<ProductService> lo
         if (maxPrice.HasValue)
             query = query.Where(p => p.ProductPrice <= maxPrice.Value);
 
+        if (pageSize <= 0) pageSize = 10;
         if (pageNumber < 1) pageNumber = 1;
-
+        
         if (inStockOnly)
             query = query.Where(p => p.ProductStock > 0);
 
@@ -87,6 +89,7 @@ public class ProductService(PcStoreDbContext context, ILogger<ProductService> lo
             .Take(pageSize)
             .Select(p => p.ToDto())
             .ToListAsync();
+        
 
 
         //returns products if they exist
@@ -117,11 +120,13 @@ public class ProductService(PcStoreDbContext context, ILogger<ProductService> lo
 
     public async Task<ProductDto> UpdateProductAsync(int productId, ProductUpdateDto product)
     {
+        
         //Checks if the product exists
         var existingProduct = await context.Products.FindAsync(productId);
         if (existingProduct == null)
             throw new NotFoundException("Product not found");
-
+        
+        logger.LogInformation("Updating product {ProductId}", productId);
         existingProduct.UpdateFromDto(product);
 
         //Logs the changes made to the product

@@ -10,4 +10,5 @@ public interface IShoppingCartService
     public Task<ShoppingCartDto> RemoveFromShoppingCartAsync(int userId, List<ShoppingCartRemoveDto> items);
     public Task<ShoppingCartDto> UpdateShoppingCartAsync(int userId, List<ShoppingCartUpdateDto> items);
     public Task<ShoppingCartDto> ClearShoppingCartAsync(int userId);
+    public decimal CalculateTotal(ShoppingCart cart);
 }

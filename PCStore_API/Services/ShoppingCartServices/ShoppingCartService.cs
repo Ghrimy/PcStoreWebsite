@@ -9,6 +9,14 @@ namespace PCStore_API.Services.ShoppingCartServices;
 
 public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartService> logger) : IShoppingCartService
 {
+    public decimal CalculateTotal(ShoppingCart cart)
+    {
+      
+        return cart.Items.Sum(i =>
+            (i.Product.ProductDiscount > 0 ? i.Product.ProductDiscount : i.Product.ProductPrice)
+            * i.Quantity
+        );
+    }
     public async Task<ShoppingCart> GetShoppingCartAsync(int userId)
     {
         //Finds the cart for the user

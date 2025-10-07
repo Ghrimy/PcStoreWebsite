@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.ApiResponse;
 using PCStore_API.Data;
+using PCStore_API.Services.OrderServices;
+using PCStore_API.Services.ProductServices;
 using PCStore_API.Services.ShoppingCartServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,9 +15,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configures application db context
+// Configures application db context and services
 builder.Services.AddDbContext<PcStoreDbContext>();
 builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 //Database connection
 builder.Services

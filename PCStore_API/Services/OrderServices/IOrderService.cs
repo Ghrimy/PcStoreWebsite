@@ -8,5 +8,6 @@ public interface IOrderService
     public Task<OrderDto> CreateOrder(int userId);
     public Task<OrderDto> GetOrderByIdAsync(int userId, int orderId);
     public Task<List<OrderDto>> GetOrdersByUserIdAsync(int userId);
+    public Task<OrderDto> RefundOrder(int userId, int orderId);
     
 }
