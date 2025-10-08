@@ -1,12 +1,8 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PCStore_API.ApiResponse;
-using PCStore_API.Data;
-using PCStore_API.Extensions;
-using PCStore_API.Models.Order;
-using PCStore_API.Models.ShoppingCart;
+
 using PCStore_API.Services.OrderServices;
 using PCStore_Shared.Models.Order;
 
@@ -53,7 +49,7 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
 
     [Authorize(Roles = "User")]
-    [HttpGet("orders/{id:int}")]
+    [HttpGet("orders/{orderId:int}")]
     public async Task<ActionResult<OrderDto>> GetOrder(int orderId)
     {
         //Gets the user id
@@ -63,5 +59,17 @@ public class OrderController(IOrderService orderService) : ControllerBase
         
         var orderDto = await orderService.GetOrderByIdAsync(userId.Value, orderId);
         return Ok(ApiResponse<OrderDto>.SuccessResponse(orderDto, "Order found"));
+    }
+
+    [Authorize(Roles = "User")]
+    [HttpPost("orders/{orderId:int}/refund")]
+    public async Task<ActionResult<RefundItemDto>> RefundOrder(int orderId, [FromBody] List<RefundItemDto> items)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null)
+            return Unauthorized(ApiResponse<OrderDto>.FailureResponse("User not found"));
+
+        var refundDto = await orderService.RefundOrder(userId.Value, orderId, items);
+        return Ok(ApiResponse<OrderDto>.SuccessResponse(refundDto, "Order refunded successfully"));
     }
 }

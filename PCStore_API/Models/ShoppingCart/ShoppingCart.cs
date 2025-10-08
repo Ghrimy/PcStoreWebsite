@@ -14,7 +14,7 @@ public class ShoppingCart
 
     public List<ShoppingCartItem> Items { get; set; } = new();
     
-    public decimal TotalPrice { get; private set; }
+    public decimal TotalPrice { get; internal set; }
 
     public DateTime LastUpdated { get; set; }
     

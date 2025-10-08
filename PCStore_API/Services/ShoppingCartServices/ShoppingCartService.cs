@@ -13,10 +13,17 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
     {
       
         return cart.Items.Sum(i =>
-            (i.Product.ProductDiscount > 0 ? i.Product.ProductDiscount : i.Product.ProductPrice)
+            (i.Product.ProductDiscount > 0 ? (i.Product.ProductDiscount / 100) : i.Product.ProductPrice)
             * i.Quantity
         );
     }
+    
+    private void UpdateCartTotals(ShoppingCart cart)
+    {
+        cart.TotalPrice = CalculateTotal(cart);
+        cart.LastUpdated = DateTime.UtcNow;
+    }
+
     public async Task<ShoppingCart> GetShoppingCartAsync(int userId)
     {
         //Finds the cart for the user
@@ -50,6 +57,7 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
             await context.SaveChangesAsync();
         }
 
+        UpdateCartTotals(cart);
         //Returns the cart
         return cart;
     }
@@ -94,7 +102,7 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
                 existingItemInCart.Quantity);
         }
 
-        cart.LastUpdated = DateTime.UtcNow;
+        UpdateCartTotals(cart);
         await context.SaveChangesAsync();
         return cart.ToDto();
     }
@@ -122,7 +130,7 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
         }
 
         //Updates the cart
-        cart.LastUpdated = DateTime.UtcNow;
+        UpdateCartTotals(cart);
         await context.SaveChangesAsync();
         return cart.ToDto();
     }
@@ -155,7 +163,7 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
         }
 
         //Updates the cart
-        cart.LastUpdated = DateTime.UtcNow;
+        UpdateCartTotals(cart);
         await context.SaveChangesAsync();
         return cart.ToDto();
     }
@@ -170,7 +178,7 @@ public class ShoppingCartService(PcStoreDbContext context, ILogger<ShoppingCartS
         cart.Items.Clear();
 
         //Updates the cart
-        cart.LastUpdated = DateTime.UtcNow;
+        UpdateCartTotals(cart);
         await context.SaveChangesAsync();
         return cart.ToDto();
     }
