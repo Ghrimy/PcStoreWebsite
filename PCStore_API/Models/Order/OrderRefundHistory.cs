@@ -16,5 +16,7 @@ public class OrderRefundHistory
     
     // Navigation
     public Order Order { get; set; } = null!;
+    public List<OrderRefundItem> OrderRefundItems = new();
+    public User.User User { get; set; }
 
 }

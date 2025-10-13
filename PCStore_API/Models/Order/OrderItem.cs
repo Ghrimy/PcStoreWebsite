@@ -8,7 +8,7 @@ public class OrderItem
     // Properties
     [Key] public int OrderItemId { get; set; }
     public int ProductId { get; set; }
-
+    public int OrderId { get; set; }
     [MaxLength(100)] public string? ProductName { get; set; } = string.Empty;
     [DataType(DataType.Currency)] [Precision(18, 2)] public decimal ProductPrice { get; set; }
     public int Quantity { get; set; }
@@ -16,5 +16,7 @@ public class OrderItem
     
     // Calculated Properties
     public decimal ProductTotal => ProductPrice * Quantity;
-
+    
+    public Product.Product Product { get; set; }
+    public Order Order { get; set; }
 }

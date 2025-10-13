@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using PCStore_Shared;
 
 namespace PCStore_API.Models.Order;
 
@@ -19,6 +20,9 @@ public class Order
     public DateTime OrderDate { get; set; }
     public DateTime? OrderDateUpdated { get; set; }
     public OrderRefundHistory OrderRefundHistory { get; set; } = new();
+
+    public User.User User { get; set; }
+    public OrderItem OrderItem { get; set; }
 
 
 }

@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PCStore_API.Models.Order;
+using PCStore_API.Models.ShoppingCart;
 using PCStore_Shared.Models.Product;
 
 namespace PCStore_API.Models.Product;
@@ -17,5 +19,8 @@ public class Product
     public string? ProductBrand { get; set; }
     
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    
+    public ICollection<OrderItem> OrderItems { get; set; }
+    public ICollection<ShoppingCartItem> ShoppingCartItems { get; set; }
 
 }

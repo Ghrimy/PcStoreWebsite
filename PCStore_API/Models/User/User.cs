@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PCStore_API.Models.Order;
 
-namespace PCStore_Shared;
+namespace PCStore_API.Models.User;
 
 public enum UserCategory
 {
@@ -14,17 +15,23 @@ public class User
     [Key] public int UserId { get; set; }
 
     // login
-    public string? UserName { get; set; }
-    public string? Password { get; set; }
+    [MaxLength(100)] public string? UserName { get; set; }
+    [MaxLength(100)] public string? Password { get; set; }
     public UserCategory UserCategory { get; set; }
 
     // personal information
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public string? Email { get; set; }
-    public string? PhoneNumber { get; set; }
-    public string? Address { get; set; }
-    public string? City { get; set; }
-    public string? Country { get; set; }
-    public string? ZipCode { get; set; }
+    [MaxLength(100)] public string? FirstName { get; set; }
+    [MaxLength(100)] public string? LastName { get; set; }
+    [MaxLength(100)] public string? Email { get; set; }
+    [MaxLength(100)] public string? PhoneNumber { get; set; }
+    [MaxLength(100)] public string? Address { get; set; }
+    [MaxLength(100)] public string? City { get; set; }
+    [MaxLength(100)] public string? Country { get; set; }
+    public int ZipCode { get; set; }
+    
+    
+    //Navigation
+    public ShoppingCart.ShoppingCart ShoppingCart { get; set; } = new();
+    public List<Order.Order> Orders { get; set; } = new();
+    public List<OrderRefundHistory> RefundHistories = new();
 }
