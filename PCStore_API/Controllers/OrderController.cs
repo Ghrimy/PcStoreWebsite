@@ -62,7 +62,7 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
 
     [Authorize(Roles = "User")]
-    [HttpPost("orders/{orderId:int}/refund")]
+    [HttpPost("orders/{orderId:int}/refund-history")]
     public async Task<ActionResult<RefundItemDto>> RefundOrder(int orderId, [FromBody] List<RefundItemDto> items)
     {
         var userId = GetCurrentUserId();

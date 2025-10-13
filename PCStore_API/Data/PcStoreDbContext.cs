@@ -14,6 +14,9 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
     public DbSet<ShoppingCartItem> ShoppingCartItem { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
+    
+    public DbSet<OrderRefundItem> OrderRefundItems { get; set; }
+    public DbSet<OrderRefundItem> OrderRefundRefundItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +26,8 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         modelBuilder.Entity<ShoppingCart>().Property(s => s.TotalPrice).HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<Order>().Property(o => o.OrderTotal).HasColumnType("decimal(18,2)");
+        
+        modelBuilder.Entity<OrderRefundHistory>().Property(o => o.RefundAmount).HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<OrderRefundItem>().Property(o => o.ProductPrice).HasColumnType("decimal(18,2)");
     }
 }

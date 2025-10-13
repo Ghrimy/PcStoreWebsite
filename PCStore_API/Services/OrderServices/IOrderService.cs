@@ -9,5 +9,6 @@ public interface IOrderService
     public Task<OrderDto> GetOrderByIdAsync(int userId, int orderId);
     public Task<List<OrderDto>> GetOrdersByUserIdAsync(int userId);
     public Task<OrderDto> RefundOrder(int userId, int orderId, List<RefundItemDto> items);
+    public Task<OrderRefundHistoryDto> GetOrderRefundHistory(int userId, int orderId);
     
 }

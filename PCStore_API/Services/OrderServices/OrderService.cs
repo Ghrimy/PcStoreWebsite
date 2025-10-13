@@ -24,6 +24,7 @@ public static class OrderStatuses
 
 public class OrderService(PcStoreDbContext context, IShoppingCartService shoppingCartService, ILogger<OrderService> logger) : IOrderService
 {
+
     public async Task<OrderDto> CreateOrder(int userId)
     {
         //Gets the user cart
@@ -134,6 +135,8 @@ public class OrderService(PcStoreDbContext context, IShoppingCartService shoppin
         var findOrder = await context.Orders
             .Where(i => i.UserId == userId)
             .Include(o => o.Items)
+            .Include(order => order.OrderRefundHistory)
+            .ThenInclude(orderRefundHistory => orderRefundHistory.RefundedItems)
             .FirstOrDefaultAsync(i => i.OrderId == orderId);
 
         //Checks if the user has orders or if it has been ordered
@@ -145,6 +148,7 @@ public class OrderService(PcStoreDbContext context, IShoppingCartService shoppin
 
 
         await using var transactionAsync = await context.Database.BeginTransactionAsync();
+
         try
         {
             foreach (var item in findOrder.Items)
@@ -160,21 +164,37 @@ public class OrderService(PcStoreDbContext context, IShoppingCartService shoppin
                 //Finds the product
                 var product = await context.Products.FindAsync(item.ProductId);
                 if (product == null) throw new NotFoundException("Product not found");
-
                 
                 //Updates the stock
                 product.ProductStock += refundItem.Quantity;
+                
+                //Updates the order
+                item.Quantity -= refundItem.Quantity;
+                
+                //Updates the refunded quantity
                 item.RefundedQuantity += refundItem.Quantity;
+
+                // Maps and adds refunded item to order refund list
+                var orderRefundItem = new OrderRefundItem()
+                {
+                    ProductId = item.ProductId,
+                    ProductName = item.ProductName,
+                    ProductPrice = item.ProductPrice,
+                    Quantity = item.Quantity,
+                };
+                findOrder.OrderRefundHistory.RefundedItems.Add(orderRefundItem);
                 
                 logger.LogInformation("Items {productId} with quantity {Quantity} have been added back to stock", refundItem.ProductId, refundItem.Quantity);
             }
 
+            //Updates the order status
             findOrder.OrderStatus = findOrder.Items.All(i => i.RefundedQuantity == i.Quantity)
                 ? OrderStatuses.Refunded
                 : OrderStatuses.PartiallyRefunded;
-            
             findOrder.OrderDateUpdated = DateTime.UtcNow;
+            findOrder.OrderRefundHistory.Date = DateTime.UtcNow;
             
+
             //Saves the changes
             //Commits the transaction
             await context.SaveChangesAsync();
@@ -190,5 +210,31 @@ public class OrderService(PcStoreDbContext context, IShoppingCartService shoppin
         }
 
         return findOrder.ToDto();
+    }
+
+    public async Task<OrderRefundHistoryDto> GetOrderRefundHistory(int userId, int orderId)
+    {
+        var findOrder = await context.Orders
+            .Where(i => i.UserId == userId)
+            .Include(o => o.Items)
+            .Include(order => order.OrderRefundHistory)
+            .ThenInclude(orderRefundHistory => orderRefundHistory.RefundedItems)
+            .FirstOrDefaultAsync(i => i.OrderId == orderId);
+        
+        if (findOrder == null) throw new NotFoundException("User has no orders");
+        if (findOrder.OrderStatus != "Refunded") throw new ValidationException("Order is not refunded");
+        if (findOrder.OrderRefundHistory?.RefundedItems == null) throw new NotFoundException("Order has no refund history");
+
+
+        var refundHistoryDto = new OrderRefundHistoryDto()
+        {
+            OrderId = findOrder.OrderId,
+            Date = findOrder.OrderRefundHistory.Date,
+            RefundedItems = findOrder.OrderRefundHistory.RefundedItems.Select(i => i.ToDto()).ToList(),
+            RefundAmount = findOrder.OrderRefundHistory.RefundedItems.Sum(i => (i.ProductPrice) * i.Quantity),
+            Reason = findOrder.OrderRefundHistory.Reason,
+        };
+
+        return refundHistoryDto;
     }
 }

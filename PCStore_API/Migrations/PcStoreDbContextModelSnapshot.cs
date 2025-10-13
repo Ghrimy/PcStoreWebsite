@@ -37,8 +37,8 @@ namespace PCStore_API.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("OrderStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("OrderTotal")
                         .HasPrecision(18, 2)
@@ -49,25 +49,26 @@ namespace PCStore_API.Migrations
 
                     b.HasKey("OrderId");
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderItem", b =>
                 {
-                    b.Property<int>("ProductId")
+                    b.Property<int>("OrderItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
 
                     b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("ProductPrice")
                         .HasPrecision(18, 2)
@@ -76,11 +77,81 @@ namespace PCStore_API.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.HasKey("ProductId");
+                    b.Property<int>("RefundedQuantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderItemId");
 
                     b.HasIndex("OrderId");
 
                     b.ToTable("OrderItems");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundHistory", b =>
+                {
+                    b.Property<int>("OrderRefundHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderRefundHistoryId"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderRefundHistoryId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("OrderRefundHistory");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundItem", b =>
+                {
+                    b.Property<int>("OrderRefundItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderRefundItemId"));
+
+                    b.Property<int?>("OrderRefundHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("ProductPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("OrderRefundItemId");
+
+                    b.HasIndex("OrderRefundHistoryId");
+
+                    b.ToTable("OrderRefundItem");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Product.Product", b =>
@@ -222,22 +293,29 @@ namespace PCStore_API.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("PCStore_API.Models.Order.Order", b =>
-                {
-                    b.HasOne("PCStore_Shared.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PCStore_API.Models.Order.OrderItem", b =>
                 {
                     b.HasOne("PCStore_API.Models.Order.Order", null)
                         .WithMany("Items")
                         .HasForeignKey("OrderId");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundHistory", b =>
+                {
+                    b.HasOne("PCStore_API.Models.Order.Order", "Order")
+                        .WithOne("OrderRefundHistory")
+                        .HasForeignKey("PCStore_API.Models.Order.OrderRefundHistory", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundItem", b =>
+                {
+                    b.HasOne("PCStore_API.Models.Order.OrderRefundHistory", null)
+                        .WithMany("RefundedItems")
+                        .HasForeignKey("OrderRefundHistoryId");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCart", b =>
@@ -273,6 +351,14 @@ namespace PCStore_API.Migrations
             modelBuilder.Entity("PCStore_API.Models.Order.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("OrderRefundHistory")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundHistory", b =>
+                {
+                    b.Navigation("RefundedItems");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCart", b =>

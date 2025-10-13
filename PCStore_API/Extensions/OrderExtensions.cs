@@ -32,4 +32,35 @@ public static class OrderExtensions
             Quantity = orderItem.Quantity
         };
     }
+
+
+    public static OrderRefundHistoryDto ToDto(this OrderRefundHistory orderRefundHistory)
+    {
+        return new OrderRefundHistoryDto()
+        {
+            OrderId = orderRefundHistory.OrderId,
+            Date = orderRefundHistory.Date,
+            Reason = orderRefundHistory.Reason,
+            RefundAmount = orderRefundHistory.RefundAmount,
+            RefundedItems = orderRefundHistory.RefundedItems.Select(i => new OrderRefundItemDto
+            {
+                ProductId = i.ProductId,
+                ProductName = i.ProductName,
+                ProductPrice = i.ProductPrice,
+                Quantity = i.Quantity
+            }).ToList(),
+        };
+
+    }
+
+    public static OrderRefundItemDto ToDto(this OrderRefundItem orderRefundItem)
+    {
+        return new OrderRefundItemDto()
+        {
+            ProductId = orderRefundItem.ProductId,
+            ProductName = orderRefundItem.ProductName,
+            ProductPrice = orderRefundItem.ProductPrice,
+            Quantity = orderRefundItem.Quantity
+        };
+    }
 }
