@@ -4,18 +4,9 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <UserSecretsId>aspnet-PCStore-7ca9a481-7d3b-4dfb-8ca4-0eb957e94640</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
-        <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true"/>
+        <ProjectReference Include="..\PCStore_Shared\PCStore_Shared.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.6"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.6"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6"/>
-    </ItemGroup>
-
 </Project>

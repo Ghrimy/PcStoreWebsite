@@ -1,0 +1,31 @@
+﻿@page "/Products"
+@using PCStore_Shared.Models.Product
+@inject HttpClient Http
+
+
+<h3>Products</h3>
+
+<ul>
+    @foreach (var product in _productDtos)
+    {
+        @if (product == null)
+        {
+            <h2>No products have been found</h2>
+        }
+        <li>@product.ProductName</li>
+        <li>@product.ProductPrice</li>
+        <Li>@product.ProductDescription</Li>
+
+    }
+</ul>
+
+@code {
+
+    private List<ProductDto> _productDtos = new List<ProductDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _productDtos = await Http.GetFromJsonAsync<List<ProductDto>>("api/Products");
+    }
+
+}
