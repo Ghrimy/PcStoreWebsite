@@ -15,8 +15,9 @@ public class User
     [Key] public int UserId { get; set; }
 
     // login
-    [MaxLength(100)] public string? UserName { get; set; }
+    [MaxLength(100)] public string? Username { get; set; }
     [MaxLength(100)] public string? Password { get; set; }
+    public string? PasswordHash { get; set; }
     public UserCategory UserCategory { get; set; }
 
     // personal information
@@ -31,7 +32,7 @@ public class User
     
     
     //Navigation
-    public ShoppingCart.ShoppingCart ShoppingCart { get; set; } = new();
-    public List<Order.Order> Orders { get; set; } = new();
-    public List<OrderRefundHistory> RefundHistories = new();
+    public ShoppingCart.ShoppingCart ShoppingCart { get; set; } = null!;
+    public List<Order.Order> Orders { get; set; } = null!;
+    public List<OrderRefundHistory> RefundHistories = null!;
 }

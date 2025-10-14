@@ -17,6 +17,7 @@ public class OrderItem
     // Calculated Properties
     public decimal ProductTotal => ProductPrice * Quantity;
     
+    // Navigation Properties
     public Product.Product Product { get; set; }
     public Order Order { get; set; }
 }

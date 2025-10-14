@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using PCStore_API.Models.Order;
 using PCStore_API.Models.Product;
 using PCStore_API.Models.ShoppingCart;
 using PCStore_API.Models.User;
 using PCStore_Shared;
+using PCStore_Shared.Models.Product;
 
 namespace PCStore_API.Data;
 
@@ -51,8 +53,8 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         modelBuilder.Entity<Order>()
             .HasMany(o => o.Items)
             .WithOne(i => i.Order)
-            .HasForeignKey(o => o.OrderId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         //Order to order-refund-history
         modelBuilder.Entity<Order>()
@@ -84,23 +86,48 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         
         //Order-item to product
         modelBuilder.Entity<OrderItem>()
-            .HasOne(i => i.Product)
-            .WithMany(p => p.OrderItems)
-            .HasForeignKey(i => i.ProductId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(i => i.Order)
+            .WithMany(o => o.Items)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         //ShoppingCart to shoppingcart-items
         modelBuilder.Entity<ShoppingCart>()
             .HasMany(s => s.Items)
             .WithOne(i => i.ShoppingCart)
-            .HasForeignKey(s => s.ShoppingCartId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(i => i.ShoppingCartId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         //Shoppingcart-items to product
         modelBuilder.Entity<ShoppingCartItem>()
             .HasOne(i => i.Product)
-            .WithMany()
+            .WithMany(p => p.ShoppingCartItems)
             .HasForeignKey(i => i.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        
+        modelBuilder.Entity<Product>().HasData(
+        new Product { ProductId = -1, ProductName = "Gaming Mouse", ProductPrice = 59.99m, ProductDiscount = 0, ProductDescription = "Gaming Mouse", ProductCategory = ProductCategory.Mouse, ProductStock = 8},
+        new Product { ProductId = -2, ProductName = "Mechanical Keyboard", ProductPrice = 129.99m, ProductDiscount = 10, ProductDescription = "Mechanical Keyboard", ProductCategory = ProductCategory.Keyboard, ProductStock = 10 },
+        new Product { ProductId = -3, ProductName = "4K Monitor", ProductPrice = 399.99m, ProductDiscount = 0, ProductDescription = "4K Monitor", ProductCategory = ProductCategory.Monitor, ProductStock = 10 });
+        
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                UserId = -1,
+                Username = "test_user",
+                Email = "",
+                PasswordHash = ""
+            });
+
+        modelBuilder.Entity<ShoppingCart>().HasData(
+            new ShoppingCart
+            {
+                ShoppingCartId = -1,
+                UserId = -1, // foreign key to the seeded User
+                LastUpdated = DateTime.UtcNow
+            });
+
     }
+    
 }

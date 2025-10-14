@@ -10,7 +10,7 @@ namespace PCStore_API.Controllers;
 [Route("api/[controller]")]
 public class ProductsController(IProductService productService) : ControllerBase
 {
-    [Authorize(Roles = "User")]
+    //[Authorize(Roles = "User")]
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts()
     {
@@ -19,8 +19,8 @@ public class ProductsController(IProductService productService) : ControllerBase
         return Ok(ApiResponse<List<ProductDto>>.SuccessResponse(products, "Products retrieved successfully"));
     }
 
-    [Authorize(Roles = "User")]
-    [HttpGet("{id:int}")]
+    //[Authorize(Roles = "User")]
+    [HttpGet("product/{id:int}")]
     public async Task<ActionResult<ProductDto>> FindProduct(int id)
     {
         //Gets the product and converts it to the front end Dto
@@ -28,7 +28,7 @@ public class ProductsController(IProductService productService) : ControllerBase
         return Ok(ApiResponse<ProductDto>.SuccessResponse(product, "Product found"));
     }
 
-    [Authorize(Roles = "User")]
+    //[Authorize(Roles = "User")]
     [HttpGet("filter")]
     public async Task<ActionResult<List<ProductDto>>> FilterProduct(ProductCategory? category, string? brand,
         bool hasDiscount, decimal? minPrice, decimal? maxPrice,

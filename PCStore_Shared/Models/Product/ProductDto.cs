@@ -13,7 +13,11 @@ public enum ProductCategory
     PcGpu,
     PcCpu,
     PcStorage,
-    PcCaseFans
+    PcCaseFans,
+    Mouse,
+    Keyboard,
+    Headphones,
+    Monitor,
 }
 
 public class ProductDto
