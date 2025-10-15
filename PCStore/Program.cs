@@ -1,7 +1,10 @@
+using MudBlazor.Services;
 using PCStore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

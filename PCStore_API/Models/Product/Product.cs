@@ -14,10 +14,11 @@ public class Product
     public string? ProductImage { get; set; }
     public decimal ProductPrice { get; set; }
     public decimal ProductDiscount { get; set; }
-    [Timestamp]  public int ProductStock { get; set; }
+    public int ProductStock { get; set; }
     public ProductCategory ProductCategory { get; set; }
     public string? ProductBrand { get; set; }
     
+    [Timestamp]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     
     public ICollection<OrderItem> OrderItems { get; set; }

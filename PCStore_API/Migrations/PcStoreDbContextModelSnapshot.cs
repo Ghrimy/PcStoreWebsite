@@ -51,7 +51,7 @@ namespace PCStore_API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderItem", b =>
@@ -88,7 +88,7 @@ namespace PCStore_API.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundHistory", b =>
@@ -122,7 +122,7 @@ namespace PCStore_API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("OrderRefundHistories", (string)null);
+                    b.ToTable("OrderRefundHistories");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundItem", b =>
@@ -162,7 +162,7 @@ namespace PCStore_API.Migrations
 
                     b.HasIndex("OrderRefundHistoryId");
 
-                    b.ToTable("OrderRefundItems", (string)null);
+                    b.ToTable("OrderRefundItems");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Product.Product", b =>
@@ -195,17 +195,17 @@ namespace PCStore_API.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductStock")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.HasKey("ProductId");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCart", b =>
@@ -230,7 +230,7 @@ namespace PCStore_API.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("ShoppingCart", (string)null);
+                    b.ToTable("ShoppingCart");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCartItem", b =>
@@ -256,7 +256,7 @@ namespace PCStore_API.Migrations
 
                     b.HasIndex("ShoppingCartId");
 
-                    b.ToTable("ShoppingCartItem", (string)null);
+                    b.ToTable("ShoppingCartItem");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.User.User", b =>
@@ -314,7 +314,7 @@ namespace PCStore_API.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.Order", b =>

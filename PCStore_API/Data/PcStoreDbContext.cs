@@ -104,30 +104,5 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
             .WithMany(p => p.ShoppingCartItems)
             .HasForeignKey(i => i.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        
-        modelBuilder.Entity<Product>().HasData(
-        new Product { ProductId = -1, ProductName = "Gaming Mouse", ProductPrice = 59.99m, ProductDiscount = 0, ProductDescription = "Gaming Mouse", ProductCategory = ProductCategory.Mouse, ProductStock = 8},
-        new Product { ProductId = -2, ProductName = "Mechanical Keyboard", ProductPrice = 129.99m, ProductDiscount = 10, ProductDescription = "Mechanical Keyboard", ProductCategory = ProductCategory.Keyboard, ProductStock = 10 },
-        new Product { ProductId = -3, ProductName = "4K Monitor", ProductPrice = 399.99m, ProductDiscount = 0, ProductDescription = "4K Monitor", ProductCategory = ProductCategory.Monitor, ProductStock = 10 });
-        
-        modelBuilder.Entity<User>().HasData(
-            new User
-            {
-                UserId = -1,
-                Username = "test_user",
-                Email = "",
-                PasswordHash = ""
-            });
-
-        modelBuilder.Entity<ShoppingCart>().HasData(
-            new ShoppingCart
-            {
-                ShoppingCartId = -1,
-                UserId = -1, // foreign key to the seeded User
-                LastUpdated = DateTime.UtcNow
-            });
-
     }
-    
 }

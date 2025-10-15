@@ -8,7 +8,7 @@ public class ProductCreateDto
 
     [Required] public string? ProductDescription { get; set; }
 
-    [Required] [DataType(DataType.Url)] public string? ProductImage { get; set; }
+    [Required] public string? ProductImage { get; set; }
 
     [Required]
     [Range(0, double.MaxValue, ErrorMessage = "Price must be greater than 0")]

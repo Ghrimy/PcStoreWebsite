@@ -1,23 +1,30 @@
 ﻿@page "/Products"
 @using PCStore_Shared.Models.Product
+@using PCStore_Shared.Models.Validation
 @inject HttpClient Http
 
+<MudText Class="mt-16 px-12">Products</MudText>
+<MudContainer Class="mt-16 px-12" MaxWidth="MaxWidth.False">
+    <MudGrid>
 
-<h3>Products</h3>
-
-<ul>
-    @foreach (var product in _productDtos)
-    {
-        @if (product == null)
+        @if (_productDtos.Count == 0)
         {
-            <h2>No products have been found</h2>
+            <p><em>There are no items currently</em></p>
         }
-        <li>@product.ProductName</li>
-        <li>@product.ProductPrice</li>
-        <Li>@product.ProductDescription</Li>
+        
+        @foreach (var product in _productDtos)
+        {
+            <MudCard xs="12" sm="6" md="4">
+                <MudCardHeader>Name: @product.ProductName</MudCardHeader>
+                <MudCardContent>Price: $@product.ProductPrice</MudCardContent>
+                <MudCardContent>Description: @product.ProductDescription</MudCardContent>
+                
+            </MudCard>
 
-    }
-</ul>
+        }
+    </MudGrid>
+</MudContainer>
+
 
 @code {
 
@@ -25,7 +32,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _productDtos = await Http.GetFromJsonAsync<List<ProductDto>>("api/Products");
+        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products");
+        if (response != null && response.Success)
+        {
+            _productDtos = response.Data;
+        }
     }
 
 }

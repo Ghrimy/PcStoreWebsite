@@ -1,0 +1,66 @@
+﻿@page "/AddProduct"
+@using PCStore_Shared.Models.Product
+@inject HttpClient Http
+
+<PageTitle>Add product</PageTitle>
+
+<MudContainer Class="mt-16 px-12">
+    <h3>Add Product</h3>
+
+    <EditForm Model="_model" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+        <MudGrid>
+            <MudItem xs="12" sm="7">
+                <MudCard>
+                    <MudTextField Label="Name: " HelperText="" @bind-Value="_model.ProductName" For="() => _model.ProductName"></MudTextField>
+                </MudCard>
+                <MudCard>
+                    <MudTextField Label="Brand: " HelperText="" @bind-Value="_model.ProductBrand" For="() => _model.ProductBrand"></MudTextField>
+                </MudCard>
+                <MudCard>
+                    <MudTextField Label="Description: " HelperText="" @bind-Value="_model.ProductDescription" For="() => _model.ProductDescription"></MudTextField>
+                </MudCard>
+                <MudCard>
+                    <MudTextField Label="Product Image: " HelperText="" @bind-Value="_model.ProductImage" For="() => _model.ProductImage"></MudTextField>
+                </MudCard>
+                <MudCard>
+                    <MudNumericField Label="Product Price: " HelperText="" @bind-Value="_model.ProductPrice" For="() => _model.ProductPrice"></MudNumericField>
+                </MudCard>
+                <MudCard>
+                    <MudNumericField Label="Product Discount: " HelperText="" @bind-Value="_model.ProductDiscount" For="() => _model.ProductDiscount"></MudNumericField>
+                </MudCard>
+                <MudCard>
+                    <MudNumericField Label="Product Stock: " HelperText="" @bind-Value="_model.ProductStock" For="() => _model.ProductStock"></MudNumericField>
+                </MudCard>
+                <MudCard>
+                    <MudSelect T="ProductCategory" @bind-Value="_model.ProductCategory" Label="Product Category">
+                        @foreach (var category in Enum.GetValues(typeof(ProductCategory)).Cast<ProductCategory>())
+                        {
+                            <MudSelectItem T="ProductCategory" Value="@category">@category</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudCard>
+                
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Add Product</MudButton>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+</MudContainer>
+
+@code {
+
+    private ProductCreateDto _model = new();
+    private string? _message;
+
+    protected override void OnInitialized() => _model = new();
+
+
+    private async Task Submit()
+    {
+        var addingProduct = await Http.PostAsJsonAsync("api/Products", _model);
+        _message = addingProduct.IsSuccessStatusCode ? "Successfully added product" : addingProduct.ReasonPhrase;
+    }
+
+
+}
+

@@ -57,7 +57,7 @@ public class ProductsController(IProductService productService) : ControllerBase
         return Ok(ApiResponse<ProductDto>.SuccessResponse(updateProduct, "Product updated successfully"));
     }
 
-    [Authorize(Roles = "Employee,Admin")]
+    //[Authorize(Roles = "Employee,Admin")]
     [HttpPost]
     public async Task<ActionResult<ProductCreateDto>> CreateProduct([FromBody] ProductCreateDto dto)
     {

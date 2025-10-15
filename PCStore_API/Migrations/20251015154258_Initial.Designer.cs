@@ -12,8 +12,8 @@ using PCStore_API.Data;
 namespace PCStore_API.Migrations
 {
     [DbContext(typeof(PcStoreDbContext))]
-    [Migration("20251014104711_FixedForeignKeysAddedSeedData")]
-    partial class FixedForeignKeysAddedSeedData
+    [Migration("20251015154258_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -198,13 +198,13 @@ namespace PCStore_API.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductStock")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.HasKey("ProductId");
 
