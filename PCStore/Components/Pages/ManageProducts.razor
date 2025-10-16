@@ -1,4 +1,4 @@
-﻿@page "/AddProduct"
+﻿@page "/ManageProducts"
 @using PCStore_Shared.Models.Product
 @inject HttpClient Http
 
@@ -40,8 +40,12 @@
                         }
                     </MudSelect>
                 </MudCard>
-                
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Add Product</MudButton>
+                <MudCard>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Add Product</MudButton>
+                </MudCard>
+                <MudCard>
+                    @_message
+                </MudCard>
             </MudItem>
         </MudGrid>
     </EditForm>
@@ -50,7 +54,7 @@
 @code {
 
     private ProductCreateDto _model = new();
-    private string? _message;
+    private string? _message = "Please fill in the fields.";
 
     protected override void OnInitialized() => _model = new();
 

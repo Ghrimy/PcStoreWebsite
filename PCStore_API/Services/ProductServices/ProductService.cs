@@ -15,7 +15,7 @@ public class ProductService(PcStoreDbContext context, ILogger<ProductService> lo
         var products = await context.Products.Select(p => p.ToDto()).ToListAsync();
         logger.LogInformation("Products found: {Count}", products.Count);
         if (products.Count == 0)
-            throw new NotFoundException("No products found");
+            products = new List<ProductDto>();
 
         return products;
     }

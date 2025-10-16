@@ -3,20 +3,26 @@
 @using PCStore_Shared.Models.Validation
 @inject HttpClient Http
 
-<MudText Class="mt-16 px-12">Products</MudText>
+<MudContainer Class="mt-16 px-12">
+    <MudText >Products</MudText>
+    <MudTextField T="string" Label="Search" @bind-Value="_searchWord" OnBlur="FindProduct"></MudTextField>
+    <MudButton Color="Color.Primary" OnClick="() => { _searchWord = string.Empty; }">Submit</MudButton>
+</MudContainer>
 <MudContainer Class="mt-16 px-12" MaxWidth="MaxWidth.False">
     <MudGrid>
 
         @if (_productDtos.Count == 0)
         {
-            <p><em>There are no items currently</em></p>
+            <h3>@_message</h3>
         }
         
         @foreach (var product in _productDtos)
         {
             <MudCard xs="12" sm="6" md="4">
                 <MudCardHeader>Name: @product.ProductName</MudCardHeader>
-                <MudCardContent>Price: $@product.ProductPrice</MudCardContent>
+                <MudCardContent>Original Price: $@product.ProductPrice</MudCardContent>
+                <MudCardContent>Discount: @product.ProductDiscount%</MudCardContent>
+                <MudCardContent>Price: $@product.FinalPrice</MudCardContent>
                 <MudCardContent>Description: @product.ProductDescription</MudCardContent>
                 
             </MudCard>
@@ -28,15 +34,33 @@
 
 @code {
 
-    private List<ProductDto> _productDtos = new List<ProductDto>();
+    private List<ProductDto> _productDtos = [];
+    private readonly string? _message = "No Products found.";
+    private string? _searchWord;
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products");
+        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
+        
         if (response != null && response.Success)
-        {
             _productDtos = response.Data;
-        }
     }
+
+    public async Task<List<ProductDto>> FindProduct()
+    {
+
+        foreach (var product in _productDtos.ToList())
+        {
+            if (product.ProductName != _searchWord)
+            {
+                    _productDtos.Remove(product);
+            }
+        }
+        StateHasChanged();
+        return _productDtos;
+
+    }
+    
+    
 
 }
