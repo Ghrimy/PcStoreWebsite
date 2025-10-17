@@ -10,7 +10,6 @@
 </MudContainer>
 <MudContainer Class="mt-16 px-12" MaxWidth="MaxWidth.False">
     <MudGrid>
-
         @if (_productDtos.Count == 0)
         {
             <h3>@_message</h3>
@@ -24,7 +23,6 @@
                 <MudCardContent>Discount: @product.ProductDiscount%</MudCardContent>
                 <MudCardContent>Price: $@product.FinalPrice</MudCardContent>
                 <MudCardContent>Description: @product.ProductDescription</MudCardContent>
-                
             </MudCard>
 
         }
@@ -40,25 +38,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
-        
-        if (response != null && response.Success)
-            _productDtos = response.Data;
+        await LoadAllProducts();
     }
 
     public async Task<List<ProductDto>> FindProduct()
     {
+       _productDtos.Clear();
+        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products/filter");
+        if (_searchWord == string.Empty)
+            await LoadAllProducts();
 
-        foreach (var product in _productDtos.ToList())
+        if (response != null && response.Success)
+        foreach (var product in response.Data.Where(product => product.ProductName == _searchWord))
         {
-            if (product.ProductName != _searchWord)
-            {
-                    _productDtos.Remove(product);
-            }
+            _productDtos.Add(product);
         }
+
+       
         StateHasChanged();
         return _productDtos;
 
+    }
+
+    private async Task<List<ProductDto>> LoadAllProducts()
+    {
+        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
+        
+        if (response != null && response.Success)
+            _productDtos = response.Data;
+
+        return _productDtos;
     }
     
     
