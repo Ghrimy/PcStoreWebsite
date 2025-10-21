@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-using PCStore_Shared;
+using PCStore_API.Models.User;
+
 
 namespace PCStore_API.Models.ShoppingCart;
 
@@ -14,6 +13,6 @@ public class ShoppingCart
     public DateTime LastUpdated { get; set; }
     
     //Navigation
-    public User.User User { get; set; }
+    public UserDetails UserDetails { get; set; }
     
 }

@@ -1,0 +1,31 @@
+﻿@page "/Login"
+@using Microsoft.AspNetCore.Identity
+@using PCStore_Shared.Models
+@using PCStore_Shared.Models.User
+
+
+<EditForm Model="_userLoginDto" OnValidSubmit="Submit">
+    <DataAnnotationsValidator/>
+    <h3>Login</h3>
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard>
+                <MudTextField Label="Username: " HelperText="" @bind-Value="" For="() =>"></MudTextField>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+    private UserLoginDto _userLoginDto = new();
+    private SignInManager<UserLoginDto>? _signInManager;
+
+    private async Task Submit()
+    {
+        var result = await _signInManager.CanSignInAsync(_userLoginDto);
+        if (result == false)
+        {
+            
+        }
+    }
+}

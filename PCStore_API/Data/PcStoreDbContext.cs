@@ -12,7 +12,8 @@ namespace PCStore_API.Data;
 public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbContext(options)
 {
     public DbSet<Product> Products { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<UserLogin> UserLogin { get; set; }
+    public DbSet<UserDetails> UserDetails { get; set; }
     public DbSet<ShoppingCart> ShoppingCart { get; set; }
     public DbSet<ShoppingCartItem> ShoppingCartItem { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -34,19 +35,35 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         modelBuilder.Entity<OrderRefundHistory>().Property(o => o.RefundAmount).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<OrderRefundItem>().Property(o => o.ProductPrice).HasColumnType("decimal(18,2)");
         
+        modelBuilder.Entity<UserLogin>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<UserLogin>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+        
         //Relationship configuration
-        //User to shoppingcart
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.ShoppingCart)
-            .WithOne(s => s.User)
-            .HasForeignKey<ShoppingCart>(s => s.UserId)
+        //UserLogin to UserDetails
+        //One-to-one relationship
+        modelBuilder.Entity<UserLogin>()
+            .HasOne(u => u.UserDetails)
+            .WithOne(d => d.UserLogin)
+            .HasForeignKey<UserDetails>(d => d.UserId);
+        
+        //UserDetails to Orders
+        //One-to-many relationship
+        modelBuilder.Entity<UserDetails>()
+            .HasMany(u => u.Orders)
+            .WithOne(o => o.UserDetails)
+            .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         
-        //User to orders
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.Orders)
-            .WithOne(o => o.User)
-            .HasForeignKey(u => u.UserId)
+        //User to shopping-cart
+        modelBuilder.Entity<UserDetails>()
+            .HasOne(u => u.ShoppingCart)
+            .WithOne(s => s.UserDetails)
+            .HasForeignKey<ShoppingCart>(s => s.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         
         //Order to order-items
@@ -72,7 +89,7 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         
         //Order-refund-history to user
         modelBuilder.Entity<OrderRefundHistory>()
-            .HasOne(r => r.User)
+            .HasOne(r => r.UserDetails)
             .WithMany(u => u.RefundHistories)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using PCStore_API.Models.User;
 
 namespace PCStore_API.Models.Order;
 
@@ -17,6 +18,6 @@ public class OrderRefundHistory
     // Navigation
     public Order Order { get; set; } = null!;
     public List<OrderRefundItem> OrderRefundItems = new();
-    public User.User User { get; set; }
+    public UserDetails UserDetails { get; set; } = null!;
 
 }

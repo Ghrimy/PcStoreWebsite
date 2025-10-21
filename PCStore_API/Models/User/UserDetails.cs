@@ -3,23 +3,14 @@ using PCStore_API.Models.Order;
 
 namespace PCStore_API.Models.User;
 
-public enum UserCategory
+public class UserDetails
 {
-    User,
-    Employee,
-    Admin
-}
+    
+    // Properties
+    [Key] public int UserDetailsId { get; set; }
+    public int UserId { get; set; }
 
-public class User
-{
-    [Key] public int UserId { get; set; }
-
-    // login
-    [MaxLength(100)] public string? Username { get; set; }
-    [MaxLength(100)] public string? Password { get; set; }
-    public string? PasswordHash { get; set; }
-    public UserCategory UserCategory { get; set; }
-
+    
     // personal information
     [MaxLength(100)] public string? FirstName { get; set; }
     [MaxLength(100)] public string? LastName { get; set; }
@@ -34,5 +25,7 @@ public class User
     //Navigation
     public ShoppingCart.ShoppingCart ShoppingCart { get; set; } = null!;
     public List<Order.Order> Orders { get; set; } = null!;
-    public List<OrderRefundHistory> RefundHistories = null!;
+    public List<OrderRefundHistory> RefundHistories { get; set; } = new();
+    public UserLogin UserLogin { get; set; } = null!;
+    
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PCStore_API.Data;
 
@@ -11,9 +12,11 @@ using PCStore_API.Data;
 namespace PCStore_API.Migrations
 {
     [DbContext(typeof(PcStoreDbContext))]
-    partial class PcStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251021133319_UpdatedUserModels")]
+    partial class UpdatedUserModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

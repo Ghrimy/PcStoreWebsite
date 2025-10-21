@@ -6,7 +6,7 @@
 <MudContainer Class="mt-16 px-12">
     <MudText >Products</MudText>
     <MudTextField T="string" Label="Search" @bind-Value="_searchWord" OnBlur="FindProduct"></MudTextField>
-    <MudButton Color="Color.Primary" OnClick="() => { _searchWord = string.Empty; }">Submit</MudButton>
+    <MudButton Color="Color.Primary" OnClick="() => FindProduct()">Submit</MudButton>
 </MudContainer>
 <MudContainer Class="mt-16 px-12" MaxWidth="MaxWidth.False">
     <MudGrid>
