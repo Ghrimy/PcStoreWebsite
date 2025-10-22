@@ -3,30 +3,29 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
 using PCStore_API.Services.ProductServices;
+using PCStore_API.Services.UserService.Security;
 using PCStore_Shared.Models;
 using PCStore_Shared.Models.User;
 
 namespace PCStore_API.Services.UserService;
 
-public class UserService(PcStoreDbContext context, ILogger<ProductService> logger) : IUserService
+public class UserService(PcStoreDbContext context, IPasswordHasher _passwordHasher, ILogger<ProductService> logger) : IUserService
 {
-
     public async Task<UserLoginDto> LoginAsync(UserLoginDto user)
     {
-        //Takes user input
+        //Checks if user exists in the database
         var existingUser = await context.UserLogin.Where(u => user.Username == u.Username).FirstOrDefaultAsync();
-        
         if (existingUser == null)
             throw new ValidationException("User does not exist");
 
-        if (existingUser.PasswordHash != null && !existingUser.PasswordHash.Equals(user.PasswordHash))
-            throw new ValidationException("Invalid Password");
-
-        await using var transactionAsync = await context.Database.BeginTransactionAsync();
+        if(user.PasswordHash == null)
+            throw new ValidationException("Password cannot be empty");
+        
         try
         {
+            var result = _passwordHasher.VerifyPassword(user.PasswordHash!, existingUser.PasswordSalt, existingUser.PasswordHash);
+            if (!result) throw new ValidationException("Invalid password");
             
-
         }
         catch (Exception e)
         {
@@ -42,7 +41,7 @@ public class UserService(PcStoreDbContext context, ILogger<ProductService> logge
     public Task<UserRegisterDto> RegisterAsync(UserRegisterDto user)
     {
         //Takes user input and checks if the user already exists in the database
-        //If the user doesn't exist, creates a new user and returns the user's id and token and role
+        //If the user doesn't existcreates a new user and returns the user's id and token and role
         //If the user already exists, returns an error message
         throw new NotImplementedException();
     }

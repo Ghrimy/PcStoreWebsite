@@ -15,7 +15,10 @@ public class UserLogin
     [Key] public int UserId { get; set; }
     [MaxLength(100)] public string? Username { get; set; }
     [MaxLength(100)] public string? Email { get; set; }
-    public string? PasswordHash { get; set; }
+    
+    public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
+    public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
+    
     public UserCategory UserCategory { get; set; }
 
     public UserDetails UserDetails { get; set; } = null!;
