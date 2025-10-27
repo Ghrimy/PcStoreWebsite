@@ -5,8 +5,9 @@ namespace PCStore_API.Services.UserService;
 
 public interface IUserService
 {
-    public Task<UserLoginDto> LoginAsync(UserLoginDto user);
-    public Task<UserRegisterDto> RegisterAsync(UserRegisterDto user);
-    public Task<UserEditDto> EditAsync(UserEditDto user);
+    public Task<LoginResultDto> LoginAsync(UserLoginDto user);
+    public Task<LoginResultDto> RegisterAsync(UserRegisterDto user);
+    public Task<UserEditDto> EditLoginAsync(UserEditDto user);
+    public Task<UserDetailDto> EditDetailsAsync(UserEditDto user);
     public Task<UserRemoveDto> RemoveAsync(UserRemoveDto user);
 }

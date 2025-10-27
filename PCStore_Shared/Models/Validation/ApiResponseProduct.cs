@@ -1,6 +1,6 @@
 ﻿namespace PCStore_Shared.Models.Validation;
 
-public class ApiResponse<T>
+public class ApiResponseProduct<T>
 {
     public bool Success { get; set; }
     public string Message { get; set; }

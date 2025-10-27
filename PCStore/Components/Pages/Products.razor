@@ -44,7 +44,7 @@
     public async Task<List<ProductDto>> FindProduct()
     {
        _productDtos.Clear();
-        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products/filter");
+        var response = await Http.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products/filter");
         if (_searchWord == string.Empty)
             await LoadAllProducts();
 
@@ -62,7 +62,7 @@
 
     private async Task<List<ProductDto>> LoadAllProducts()
     {
-        var response = await Http.GetFromJsonAsync<ApiResponse<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
+        var response = await Http.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
         
         if (response != null && response.Success)
             _productDtos = response.Data;

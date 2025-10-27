@@ -19,7 +19,7 @@ public class UserLogin
     public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
     public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
     
-    public UserCategory UserCategory { get; set; }
+    public PCStore_Shared.Models.User.UserCategory UserCategory { get; set; }
 
     public UserDetails UserDetails { get; set; } = null!;
 }
