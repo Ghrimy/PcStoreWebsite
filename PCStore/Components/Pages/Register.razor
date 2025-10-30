@@ -1,10 +1,8 @@
-﻿@page "/Login"
-@using Microsoft.AspNetCore.Identity
+﻿@page "/Register"
 @using PCStore_Shared.Models.User
 @using PCStore.Components.Services
-@inject AuthService authService
-@inject CustomAuthStateProvider AuthStateProvider
-@inject NavigationManager NavigationManager
+@inject AuthService Authservice
+
 
 <MudContainer Class="mt-16 px-12">
     <EditForm Model="_model" OnValidSubmit="Submit">
@@ -25,32 +23,20 @@
                 <MudCard>
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
                 </MudCard>
-                <MudCard>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="HandleLogout">Logout</MudButton>
-                </MudCard>
-                
-                <MudCard>
-                    <label>@_message</label>
-                </MudCard>
             </MudItem>
         </MudGrid>
     </EditForm>
 </MudContainer>
 
 @code {
-    private readonly UserLoginDto _model = new();
-    private SignInManager<UserLoginDto> _signInManager;
-    private string _message = "";
+    private readonly UserRegisterDto _model = new();
 
-    private async Task Submit()
+    public async Task Submit()
     {
-        authService.LoginAsync(_model);
+        var result = await Authservice.RegisterAsync(_model);
+        if (result.Success)
+        {
+        }
     }
 
-    private async Task HandleLogout()
-    {
-        await authService.LogoutAsync();
-        AuthStateProvider.NotifyUserLogout();
-        NavigationManager.NavigateTo("/");
-    }
 }

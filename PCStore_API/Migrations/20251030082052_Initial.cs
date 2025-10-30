@@ -33,15 +33,29 @@ namespace PCStore_API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "UserLogin",
                 columns: table => new
                 {
                     UserId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Password = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserCategory = table.Column<int>(type: "int", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    PasswordHash = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    PasswordSalt = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    UserCategory = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserLogin", x => x.UserId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserDetails",
+                columns: table => new
+                {
+                    UserDetailsId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -53,7 +67,13 @@ namespace PCStore_API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.UserId);
+                    table.PrimaryKey("PK_UserDetails", x => x.UserDetailsId);
+                    table.ForeignKey(
+                        name: "FK_UserDetails_UserLogin_UserId",
+                        column: x => x.UserId,
+                        principalTable: "UserLogin",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -72,10 +92,10 @@ namespace PCStore_API.Migrations
                 {
                     table.PrimaryKey("PK_Orders", x => x.OrderId);
                     table.ForeignKey(
-                        name: "FK_Orders_Users_UserId",
+                        name: "FK_Orders_UserDetails_UserId",
                         column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
+                        principalTable: "UserDetails",
+                        principalColumn: "UserDetailsId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -93,10 +113,10 @@ namespace PCStore_API.Migrations
                 {
                     table.PrimaryKey("PK_ShoppingCart", x => x.ShoppingCartId);
                     table.ForeignKey(
-                        name: "FK_ShoppingCart_Users_UserId",
+                        name: "FK_ShoppingCart_UserDetails_UserId",
                         column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
+                        principalTable: "UserDetails",
+                        principalColumn: "UserDetailsId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -152,10 +172,10 @@ namespace PCStore_API.Migrations
                         principalColumn: "OrderId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_OrderRefundHistories_Users_UserId",
+                        name: "FK_OrderRefundHistories_UserDetails_UserId",
                         column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
+                        principalTable: "UserDetails",
+                        principalColumn: "UserDetailsId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -268,6 +288,26 @@ namespace PCStore_API.Migrations
                 name: "IX_ShoppingCartItem_ShoppingCartId",
                 table: "ShoppingCartItem",
                 column: "ShoppingCartId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserDetails_UserId",
+                table: "UserDetails",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserLogin_Email",
+                table: "UserLogin",
+                column: "Email",
+                unique: true,
+                filter: "[Email] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserLogin_Username",
+                table: "UserLogin",
+                column: "Username",
+                unique: true,
+                filter: "[Username] IS NOT NULL");
         }
 
         /// <inheritdoc />
@@ -295,7 +335,10 @@ namespace PCStore_API.Migrations
                 name: "Orders");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "UserDetails");
+
+            migrationBuilder.DropTable(
+                name: "UserLogin");
         }
     }
 }

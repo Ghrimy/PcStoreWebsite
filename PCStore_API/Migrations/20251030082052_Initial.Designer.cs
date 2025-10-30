@@ -12,8 +12,8 @@ using PCStore_API.Data;
 namespace PCStore_API.Migrations
 {
     [DbContext(typeof(PcStoreDbContext))]
-    [Migration("20251021100724_UpdatedUserTableReplacedPasswordWithHash")]
-    partial class UpdatedUserTableReplacedPasswordWithHash
+    [Migration("20251030082052_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -262,13 +262,13 @@ namespace PCStore_API.Migrations
                     b.ToTable("ShoppingCartItem");
                 });
 
-            modelBuilder.Entity("PCStore_API.Models.User.User", b =>
+            modelBuilder.Entity("PCStore_API.Models.User.UserDetails", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<int>("UserDetailsId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserDetailsId"));
 
                     b.Property<string>("Address")
                         .HasMaxLength(100)
@@ -294,12 +294,43 @@ namespace PCStore_API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ZipCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserDetailsId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserDetails");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.User.UserLogin", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<int>("UserCategory")
                         .HasColumnType("int");
@@ -308,23 +339,28 @@ namespace PCStore_API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("ZipCode")
-                        .HasColumnType("int");
-
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
+
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasFilter("[Username] IS NOT NULL");
+
+                    b.ToTable("UserLogin");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.Order", b =>
                 {
-                    b.HasOne("PCStore_API.Models.User.User", "User")
+                    b.HasOne("PCStore_API.Models.User.UserDetails", "UserDetails")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("UserDetails");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderItem", b =>
@@ -354,7 +390,7 @@ namespace PCStore_API.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PCStore_API.Models.User.User", "User")
+                    b.HasOne("PCStore_API.Models.User.UserDetails", "UserDetails")
                         .WithMany("RefundHistories")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -362,7 +398,7 @@ namespace PCStore_API.Migrations
 
                     b.Navigation("Order");
 
-                    b.Navigation("User");
+                    b.Navigation("UserDetails");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.OrderRefundItem", b =>
@@ -386,13 +422,13 @@ namespace PCStore_API.Migrations
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCart", b =>
                 {
-                    b.HasOne("PCStore_API.Models.User.User", "User")
+                    b.HasOne("PCStore_API.Models.User.UserDetails", "UserDetails")
                         .WithOne("ShoppingCart")
                         .HasForeignKey("PCStore_API.Models.ShoppingCart.ShoppingCart", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("UserDetails");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.ShoppingCart.ShoppingCartItem", b =>
@@ -412,6 +448,17 @@ namespace PCStore_API.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("ShoppingCart");
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.User.UserDetails", b =>
+                {
+                    b.HasOne("PCStore_API.Models.User.UserLogin", "UserLogin")
+                        .WithOne("UserDetails")
+                        .HasForeignKey("PCStore_API.Models.User.UserDetails", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UserLogin");
                 });
 
             modelBuilder.Entity("PCStore_API.Models.Order.Order", b =>
@@ -439,13 +486,19 @@ namespace PCStore_API.Migrations
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("PCStore_API.Models.User.User", b =>
+            modelBuilder.Entity("PCStore_API.Models.User.UserDetails", b =>
                 {
                     b.Navigation("Orders");
 
                     b.Navigation("RefundHistories");
 
                     b.Navigation("ShoppingCart")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PCStore_API.Models.User.UserLogin", b =>
+                {
+                    b.Navigation("UserDetails")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

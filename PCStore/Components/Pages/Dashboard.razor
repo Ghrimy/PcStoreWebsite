@@ -1,0 +1,22 @@
+﻿@page "/Dashboard"
+@using Microsoft.AspNetCore.Components.Authorization
+
+
+<AuthorizeView>
+    <Authorized>
+        <h1>Dashboard</h1>
+        <h1>Hello, @context.User.Identity.Name!</h1>
+    </Authorized>
+    <NotAuthorized>
+        <h1>You are not authorized to access this page.</h1>
+        <p>Please login.</p>
+        <p>@context.User.Identity.IsAuthenticated</p>
+        <p>@context.User.Identity.Name</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+@code {
+    
+}

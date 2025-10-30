@@ -4,7 +4,7 @@ using PCStore_API.ApiResponse;
 using PCStore_API.Services.ProductServices;
 using PCStore_Shared.Models.Product;
 
-namespace PCStore_API.Controllers;
+namespace PCStore_API.Controllers.Product;
 
 [ApiController]
 [Route("api/[controller]")]

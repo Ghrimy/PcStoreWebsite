@@ -35,6 +35,7 @@ public class PcStoreDbContext(DbContextOptions<PcStoreDbContext> options) : DbCo
         modelBuilder.Entity<OrderRefundHistory>().Property(o => o.RefundAmount).HasColumnType("decimal(18,2)");
         modelBuilder.Entity<OrderRefundItem>().Property(o => o.ProductPrice).HasColumnType("decimal(18,2)");
         
+        
         modelBuilder.Entity<UserLogin>()
             .HasIndex(u => u.Email)
             .IsUnique();

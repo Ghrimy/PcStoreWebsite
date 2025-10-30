@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using PCStore_API.Data;
@@ -46,8 +47,7 @@ public class UserService(PcStoreDbContext context, IPasswordHasher passwordHashe
     {
         var existingUser = await context.UserLogin
             .FirstOrDefaultAsync(u => u.Username == user.Username || u.Email == user.Email);
-
-        if (existingUser == null) throw new ValidationException("User not found");
+        
         if(user.Password == null) throw new ValidationException("Password cannot be empty");
 
         await using var transactionAsync = await context.Database.BeginTransactionAsync();
@@ -96,4 +96,28 @@ public class UserService(PcStoreDbContext context, IPasswordHasher passwordHashe
     {
         throw new NotImplementedException();
     }
+
+    public async Task<LoginResultDto?> AuthenticateAsync(ClaimsPrincipal user)
+    {
+        if (user.Identity is not { IsAuthenticated: true })
+            return null;
+
+        var username = user.Identity.Name;
+        if (string.IsNullOrEmpty(username))
+            return null;
+
+        var existingUser = await context.UserLogin.FirstOrDefaultAsync(u => u.Username == username);
+        if (existingUser is null)
+            return null;
+
+        return new LoginResultDto
+        {
+            Success = true,
+            Message = "Authenticated",
+            UserId = existingUser.UserId,
+            Username = existingUser.Username,
+            UserCategory = existingUser.UserCategory
+        };
+    }
+
 }

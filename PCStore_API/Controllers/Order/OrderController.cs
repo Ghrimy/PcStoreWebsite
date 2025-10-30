@@ -2,11 +2,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PCStore_API.ApiResponse;
-
 using PCStore_API.Services.OrderServices;
 using PCStore_Shared.Models.Order;
 
-namespace PCStore_API.Controllers;
+namespace PCStore_API.Controllers.Order;
 
 [ApiController]
 [Route("api/[controller]")]

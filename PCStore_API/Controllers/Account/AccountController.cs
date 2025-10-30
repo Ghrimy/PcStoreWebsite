@@ -7,11 +7,11 @@ using PCStore_API.ApiResponse;
 using PCStore_API.Services.UserService;
 using PCStore_Shared.Models.User;
 
-namespace PCStore_API.Controllers;
+namespace PCStore_API.Controllers.Account;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountController(IUserService userService, ILogger logger) : ControllerBase
+public class AccountController(IUserService userService) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<ActionResult<LoginResultDto>> LoginAsync(UserLoginDto user)
@@ -20,7 +20,6 @@ public class AccountController(IUserService userService, ILogger logger) : Contr
 
         if (!userLogin.Success)
         {
-            logger.LogWarning("Failed login attempt for {Username}", user.Username);
             return Unauthorized(ApiResponse<LoginResultDto>.FailureResponse("Invalid credentials"));
         }
 
@@ -35,8 +34,11 @@ public class AccountController(IUserService userService, ILogger logger) : Contr
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity),
-            new AuthenticationProperties { IsPersistent = true });
-        logger.LogInformation("User {Username} logged in successfully", userLogin.Username);
+            new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            });
         return Ok(ApiResponse<LoginResultDto>.SuccessResponse(userLogin, "Login successful"));
     }
 
@@ -46,6 +48,25 @@ public class AccountController(IUserService userService, ILogger logger) : Contr
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Ok(ApiResponse<LoginResultDto>.SuccessResponse(null, "Logout successful"));
         
+    }
+
+    [HttpGet("authstatus")]
+    public async Task<ActionResult<LoginResultDto>> AuthStatusAsync()
+    {
+        var userInfo = await userService.AuthenticateAsync(User);
+
+        if (userInfo is null)
+            return Unauthorized(ApiResponse<LoginResultDto>.FailureResponse("Not Authenticated"));
+
+        return Ok(ApiResponse<LoginResultDto>.SuccessResponse(userInfo, "Authenticated"));
+    }
+
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<ActionResult<LoginResultDto>> RegisterAsync(UserRegisterDto user)
+    {
+        var result = await userService.RegisterAsync(user);
+        return Ok(ApiResponse<LoginResultDto>.SuccessResponse(result, "Registration successful"));
     }
     
 } 
