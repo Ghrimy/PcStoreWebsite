@@ -7,7 +7,7 @@ using PCStore_API.Extensions;
 using PCStore_API.Services.ShoppingCartServices;
 using PCStore_Shared.Models.ShoppingCart;
 
-namespace PCStore_API.Controllers;
+namespace PCStore_API.Controllers.ShoppingCart;
 
 [ApiController]
 [Authorize(Roles = "User,Admin")]

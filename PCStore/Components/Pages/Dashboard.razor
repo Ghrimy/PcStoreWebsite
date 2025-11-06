@@ -1,22 +1,90 @@
-﻿@page "/Dashboard"
+﻿@page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using PCStore_Shared.Models.Order
+@using PCStore.Components.Services
+@attribute [Authorize]
+@inject JwtAuthStateProvider AuthStateProvider
+@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
 
 
-<AuthorizeView>
-    <Authorized>
-        <h1>Dashboard</h1>
-        <h1>Hello, @context.User.Identity.Name!</h1>
-    </Authorized>
-    <NotAuthorized>
-        <h1>You are not authorized to access this page.</h1>
-        <p>Please login.</p>
-        <p>@context.User.Identity.IsAuthenticated</p>
-        <p>@context.User.Identity.Name</p>
-    </NotAuthorized>
-</AuthorizeView>
-
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <h1>Welcome to your Dashboard</h1>
+        
+        <h2>You are logged in as @context.User.Identity.Name</h2>
+        
+      
+        <MudButton OnClick="ToShoppingCart">Go to shoppingcart</MudButton>
+        <h3>Your orders</h3>
+        @if (_userOrder.Count == 0)
+        {
+            <h3>You have no orders</h3>
+            <p>@message</p>
+        }
+        else
+        {
+            <MudList T="OrderDto">
+            @foreach (var item in _userOrder)
+            {
+                <MudListItem T="OrderItemDto">
+                    @item
+                </MudListItem>
+            }
+            </MudList>
+            
+        }
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 
 @code {
+    private bool _isAuthenticated = false;
+    private bool _firstRender = true;
     
+    private string? message;
+    private List<OrderDto> _userOrder = new();
+
+    protected override async void OnInitialized()
+    {
+        _firstRender = false;
+        message = null;
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_firstRender)
+        {
+            _firstRender = true;
+            await GetUserOrdersAsync();
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task GetUserOrdersAsync()
+    {
+        var client = HttpClientFactory.CreateClient("ApiWithAuth");
+
+        try
+        {
+            var orders = await client.GetFromJsonAsync<List<OrderDto>>("api/order/orders");
+            _userOrder = orders ?? new List<OrderDto>();
+        }
+        catch (HttpRequestException ex)
+        {
+            message = $"Error fetching orders: {ex.Message}";
+        }
+    }
+
+    private async Task ToShoppingCart()
+    {
+        Navigation.NavigateTo("/ShoppingCart");
+    }
 }
+

@@ -1,7 +1,11 @@
 ﻿@page "/Register"
 @using PCStore_Shared.Models.User
+@using PCStore_Shared.Models.Validation
 @using PCStore.Components.Services
-@inject AuthService Authservice
+@inject HttpClient Http
+@inject JwtAuthStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 
 <MudContainer Class="mt-16 px-12">
@@ -23,6 +27,9 @@
                 <MudCard>
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
                 </MudCard>
+                <MudCard>
+                    <MudText>@message</MudText>
+                </MudCard>
             </MudItem>
         </MudGrid>
     </EditForm>
@@ -30,12 +37,38 @@
 
 @code {
     private readonly UserRegisterDto _model = new();
+    private string message;
 
     public async Task Submit()
     {
-        var result = await Authservice.RegisterAsync(_model);
-        if (result.Success)
+        message = null;
+        try
         {
+            var response = await Http.PostAsJsonAsync("api/account/register", _model);
+            if (!response.IsSuccessStatusCode)
+            {
+                message = "Invalid username or password.";
+                return;
+            }
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponseAccount<LoginResultDto>>();
+            if (apiResponse == null || apiResponse.Data == null || string.IsNullOrEmpty(apiResponse.Data.Token))
+            {
+                message = "Unexpected response from server.";
+                return;
+            }
+
+
+            // Store token and update authentication state
+            await AuthStateProvider.MarkUserAsAuthenticated(apiResponse.Data.Token);
+
+            // Navigate to dashboard
+            Navigation.NavigateTo("/Dashboard");
+        }
+    
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
         }
     }
 

@@ -1,0 +1,64 @@
+﻿@page "/ShoppingCart"
+@using PCStore_Shared.Models.ShoppingCart
+@using PCStore_Shared.Models.Validation
+@inject IHttpClientFactory HttpClientFactory
+
+
+
+<h3>ShoppingCart</h3>
+<p>@message</p>
+
+<MudList T="ShoppingCartDto">
+    @foreach (var item in _shoppingCartDto.ShoppingCartItems)
+    {
+        <MudListItem T ="ShoppingCartItemDto">
+            <MudText>Name: @item.ProductName</MudText>
+            <MudText>Price: @item.ProductPrice</MudText>
+            <MudText>Quantity: @item.Quantity</MudText>
+        </MudListItem>
+    }
+</MudList>
+
+@code {
+    private bool _firstRender = true;
+    private string message;
+    private ShoppingCartDto _shoppingCartDto = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _firstRender = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_firstRender)
+        {
+            _firstRender = true;
+            StateHasChanged();
+        }
+    }
+
+    public async Task<ShoppingCartDto> GetShoppingCart()
+    {
+        var client = HttpClientFactory.CreateClient("ApiClient");
+        try
+        {
+            var response = await client.GetFromJsonAsync<ApiResponseShoppingCart<ShoppingCartDto>>("api/ShoppingCart");
+            if (!response.Success)
+            {
+                message = "No cart found";
+            }
+
+            _shoppingCartDto = response.Data ?? new ShoppingCartDto();
+            return _shoppingCartDto;
+
+        }
+        catch (Exception e)
+        {
+            message = $"Error: {e.Message}";
+        }
+
+        return _shoppingCartDto;
+    }
+}

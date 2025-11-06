@@ -1,8 +1,11 @@
-﻿using System.Security.Claims;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using PCStore_API.ApiResponse;
 using PCStore_API.Services.UserService;
 using PCStore_Shared.Models.User;
@@ -11,35 +14,50 @@ namespace PCStore_API.Controllers.Account;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountController(IUserService userService) : ControllerBase
+public class AccountController(IUserService userService, IConfiguration config) : ControllerBase
 {
+    private string GenerateJwtToken(string username, object role)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, username),
+            new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim("role", role.ToString()),
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: "https://localhost:5005",
+            audience: "https://localhost:5002",
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+
+    
     [HttpPost("login")]
     public async Task<ActionResult<LoginResultDto>> LoginAsync(UserLoginDto user)
     {
         var userLogin = await userService.LoginAsync(user);
 
         if (!userLogin.Success)
-        {
             return Unauthorized(ApiResponse<LoginResultDto>.FailureResponse("Invalid credentials"));
-        }
 
-        var claims = new List<Claim>
+        var token = GenerateJwtToken(userLogin.Username, userLogin.UserCategory);
+
+        var result = new LoginResultDto
         {
-            new Claim(ClaimTypes.Name, userLogin.Username),
-            new Claim(ClaimTypes.Role, userLogin.UserCategory.ToString())
+            Username = userLogin.Username,
+            UserCategory = userLogin.UserCategory,
+            Token = token,
         };
-        
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identity),
-            new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-            });
-        return Ok(ApiResponse<LoginResultDto>.SuccessResponse(userLogin, "Login successful"));
+
+        return Ok(ApiResponse<LoginResultDto>.SuccessResponse(result, "Login successful"));
     }
 
     [HttpPost("logout")]

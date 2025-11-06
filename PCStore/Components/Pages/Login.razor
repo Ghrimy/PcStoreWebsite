@@ -1,13 +1,15 @@
 ﻿@page "/Login"
-@using Microsoft.AspNetCore.Identity
 @using PCStore_Shared.Models.User
+@using PCStore_Shared.Models.Validation
 @using PCStore.Components.Services
-@inject AuthService authService
-@inject CustomAuthStateProvider AuthStateProvider
-@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject JwtAuthStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 
 <MudContainer Class="mt-16 px-12">
-    <EditForm Model="_model" OnValidSubmit="Submit">
+    <EditForm Model="_model" OnValidSubmit="LoginAsync">
         <DataAnnotationsValidator/>
         <h3>Login</h3>
         <MudGrid>
@@ -39,18 +41,70 @@
 
 @code {
     private readonly UserLoginDto _model = new();
-    private SignInManager<UserLoginDto> _signInManager;
-    private string _message = "";
+    private string _message;
 
-    private async Task Submit()
+    private async Task LoginAsync()
     {
-        authService.LoginAsync(_model);
+        _message = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/account/login", _model);
+            if (!response.IsSuccessStatusCode)
+            {
+                _message = "Invalid username or password.";
+                return;
+            }
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponseAccount<LoginResultDto>>();
+            if (apiResponse == null || apiResponse.Data == null || string.IsNullOrEmpty(apiResponse.Data.Token))
+            {
+                _message = "Unexpected response from server.";
+                return;
+            }
+
+            // Store token and update authentication state
+            await AuthStateProvider.MarkUserAsAuthenticated(apiResponse.Data.Token);
+
+            // Navigate to dashboard
+            Navigation.NavigateTo("/Dashboard");
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthStateProvider.MarkUserAsLoggedOut();
+        Navigation.NavigateTo("/");
+    }
+
+    // Prerender-safe token check
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    await AuthStateProvider.MarkUserAsAuthenticated(token);
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // Ignore JS errors during prerender
+            }
+        }
     }
 
     private async Task HandleLogout()
     {
-        await authService.LogoutAsync();
-        AuthStateProvider.NotifyUserLogout();
-        NavigationManager.NavigateTo("/");
+        await AuthStateProvider.MarkUserAsLoggedOut();
+        Navigation.NavigateTo("/login");
     }
 }

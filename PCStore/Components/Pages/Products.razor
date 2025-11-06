@@ -1,7 +1,10 @@
 ﻿@page "/Products"
 @using PCStore_Shared.Models.Product
 @using PCStore_Shared.Models.Validation
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
+
+
+
 
 <MudContainer Class="mt-16 px-12">
     <MudText >Products</MudText>
@@ -23,28 +26,49 @@
                 <MudCardContent>Discount: @product.ProductDiscount%</MudCardContent>
                 <MudCardContent>Price: $@product.FinalPrice</MudCardContent>
                 <MudCardContent>Description: @product.ProductDescription</MudCardContent>
+                <MudCardContent>
+                    <MudButton OnClick="@(() => AddToCart(product))">Add to Cart</MudButton>
+                </MudCardContent>
             </MudCard>
 
         }
     </MudGrid>
 </MudContainer>
 
+<p>@ErrorMessage</p>
+
 
 @code {
 
     private List<ProductDto> _productDtos = [];
     private readonly string? _message = "No Products found.";
+    private string? ErrorMessage;
     private string? _searchWord;
+    private bool _firstRender = true;
+    private bool _isRendered;
 
     protected override async Task OnInitializedAsync()
     {
+        _firstRender = false;
         await LoadAllProducts();
     }
 
-    public async Task<List<ProductDto>> FindProduct()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_firstRender)
+        {
+            _isRendered = true;
+            await LoadAllProducts(); // Safe now, JS interop allowed
+            StateHasChanged();
+        }
+    }
+    
+    private async Task<List<ProductDto>> FindProduct()
+    { 
+        var client = HttpClientFactory.CreateClient("ApiClient");
+        
        _productDtos.Clear();
-        var response = await Http.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products/filter");
+        var response = await client.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products/filter");
         if (_searchWord == string.Empty)
             await LoadAllProducts();
 
@@ -62,14 +86,33 @@
 
     private async Task<List<ProductDto>> LoadAllProducts()
     {
-        var response = await Http.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
+        
+        var client = HttpClientFactory.CreateClient("ApiClient");
+        
+        var response = await client.GetFromJsonAsync<ApiResponseProduct<List<ProductDto>>>("api/Products", cancellationToken: CancellationToken.None);
         
         if (response != null && response.Success)
             _productDtos = response.Data;
 
         return _productDtos;
     }
-    
-    
 
+    private async Task AddToCart(ProductDto product)
+    {
+        if (!_isRendered)
+            return; 
+        
+        var client = HttpClientFactory.CreateClient("ApiWithAuth");
+
+        try
+        {
+            var response = await client.PostAsJsonAsync("api/Shoppingcart", product);
+            if (!response.IsSuccessStatusCode)
+                ErrorMessage = "Product could not be added";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errors: {ex.Message}";
+        }
+    }
 }

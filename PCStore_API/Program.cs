@@ -1,5 +1,9 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PCStore_API.ApiResponse;
 using PCStore_API.Data;
 using PCStore_API.Services.OrderServices;
@@ -7,6 +11,7 @@ using PCStore_API.Services.ProductServices;
 using PCStore_API.Services.ShoppingCartServices;
 using PCStore_API.Services.UserService;
 using PCStore_API.Services.UserService.Security;
+using PCStore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,32 +37,28 @@ builder.Services
     .AddDbContext<PcStoreDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddCors(options =>
+
+builder.Services.AddAuthentication(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        policy.WithOrigins("https://localhost:5002")
-            .AllowCredentials()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+        
+        // THIS IS IMPORTANT: map role claim correctly
+        RoleClaimType = ClaimTypes.Role
+    };
 });
-
-
-
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie("Cookies", options =>
-    {
-        options.Cookie.Name = "AuthCookie";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.None; // critical when frontend is on another port
-        options.Cookie.Path = "/";
-        options.Cookie.Domain = null; // stay local
-        options.ExpireTimeSpan = TimeSpan.FromDays(14);
-        options.SlidingExpiration = true;
-    });
-
 
 builder.Services.AddAuthorization();
 
@@ -72,21 +73,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
-
 // Add exception handling middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
-app.UseCors("AllowFrontend");
-app.Use((context, next) =>
-{
-    context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
-    return next();
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
